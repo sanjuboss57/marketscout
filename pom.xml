@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>3.3.5</version>
+        <relativePath/> <!-- lookup parent from repository -->
+    </parent>
+    <groupId>com.marketscout</groupId>
+    <artifactId>marketscout</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+    <name>MarketScout</name>
+    <description>MarketScout Spring Boot 3.3.x Application</description>
+
+    <properties>
+        <java.version>21</java.version>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-websocket</artifactId>
+        </dependency>
+
+        <!-- JavaFX Desktop UI Controls & Layout Panes -->
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-controls</artifactId>
+            <version>21.0.4</version>
+        </dependency>
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-fxml</artifactId>
+            <version>21.0.4</version>
+        </dependency>
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-graphics</artifactId>
+            <version>21.0.4</version>
+        </dependency>
+
+        <!-- SQLite Database & Spring JDBC -->
+        <dependency>
+            <groupId>org.xerial</groupId>
+            <artifactId>sqlite-jdbc</artifactId>
+            <version>3.46.1.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-jdbc</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <excludes>
+                        <exclude>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                        </exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
+
+            <!-- jpackage: native desktop installer -->
+            <plugin>
+                <groupId>org.panteleyev</groupId>
+                <artifactId>jpackage-maven-plugin</artifactId>
+                <version>1.6.5</version>
+                <configuration>
+                    <!-- General -->
+                    <name>MarketScout</name>
+                    <appVersion>1.0.0</appVersion>
+                    <vendor>MarketScout</vendor>
+                    <copyright>2024 MarketScout</copyright>
+                    <description>Real-Time Commodity Market Dashboard</description>
+                    <icon>${project.basedir}/packaging/windows/MarketScout.ico</icon>
+
+                    <!-- Input: the fat JAR produced by spring-boot:repackage -->
+                    <input>${project.build.directory}</input>
+                    <mainJar>${project.artifactId}-${project.version}.jar</mainJar>
+                    <mainClass>com.marketscout.MarketScoutApplication</mainClass>
+
+                    <!-- Output -->
+                    <destination>${project.build.directory}/dist</destination>
+                    <type>EXE</type>
+
+                    <!-- JVM args -->
+                    <javaOptions>
+                        <option>-Dserver.port=18080</option>
+                        <option>-Djava.awt.headless=false</option>
+                    </javaOptions>
+
+                    <!-- Windows-specific -->
+                    <winDirChooser>true</winDirChooser>
+                    <winMenu>true</winMenu>
+                    <winMenuGroup>MarketScout</winMenuGroup>
+                    <winShortcut>true</winShortcut>
+                    <winConsole>false</winConsole>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>

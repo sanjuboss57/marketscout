@@ -1,0 +1,14 @@
+server:
+  port: 18080   # overridable via JVM flag or env var, defaults to 18080 for desktop
+
+spring:
+  application:
+    name: MarketScout
+  datasource:
+    url: jdbc:sqlite:marketscout.db
+    driver-class-name: org.sqlite.JDBC
+
+logging:
+  level:
+    root: WARN
+    com.marketscout: INFO
