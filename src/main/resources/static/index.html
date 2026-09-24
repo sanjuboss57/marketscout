@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MarketScout | Real-Time Commodity Terminal</title>
+    <!-- TailwindCSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        terminal: {
+                            bg: '#080c14',
+                            surface: '#0d131f',
+                            border: '#1a2436',
+                            highlight: '#1e293b'
+                        }
+                    },
+                    fontFamily: {
+                        mono: ['"JetBrains Mono"', '"Fira Code"', 'monospace'],
+                        sans: ['Inter', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- SockJS & Stomp -->
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #080c14;
+            color: #e2e8f0;
+        }
+        .font-mono-numbers {
+            font-family: 'JetBrains Mono', monospace;
+            font-feature-settings: "tnum" 1;
+        }
+        .flash-up {
+            animation: flashGreen 0.7s ease-out;
+        }
+        .flash-down {
+            animation: flashRed 0.7s ease-out;
+        }
+        @keyframes flashGreen {
+            0% { background-color: rgba(16, 185, 129, 0.35); }
+            100% { background-color: transparent; }
+        }
+        @keyframes flashRed {
+            0% { background-color: rgba(244, 63, 94, 0.35); }
+            100% { background-color: transparent; }
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0d131f;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1e293b;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #334155;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col bg-[#080c14] text-slate-100">
+
+    <!-- Desktop Application Window Titlebar / Controls -->
+    <header class="border-b border-terminal-border bg-[#0b101b] px-4 py-2.5 sticky top-0 z-40 flex items-center justify-between select-none">
+        <!-- Brand & Desktop Badge -->
+        <div class="flex items-center gap-3">
+            <div class="flex items-center justify-center w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-mono font-bold text-sm shadow-[0_0_15px_rgba(16,185,129,0.25)]">
+                MS
+            </div>
+            <div>
+                <div class="flex items-center gap-2">
+                    <span class="font-bold tracking-tight text-white text-sm">MARKET<span class="text-emerald-400">SCOUT</span></span>
+                    <span class="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded font-mono font-semibold bg-emerald-950/80 text-emerald-400 border border-emerald-800/60 flex items-center gap-1.5">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
+                        DESKTOP APP
+                    </span>
+                    <span id="desktop-ram-badge" class="hidden md:inline-block text-[10px] font-mono text-slate-400 bg-slate-900 border border-slate-800 px-2 py-0.5 rounded">
+                        RAM: -- MB
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Center: Commodity Quick Switcher Hotkeys -->
+        <div class="hidden xl:flex items-center gap-1 text-xs font-mono bg-slate-900/80 p-1 rounded-lg border border-slate-800">
+            <button onclick="selectCommodity('GOLD')" class="px-2.5 py-1 rounded hover:bg-slate-800 text-slate-300 transition flex items-center gap-1.5">
+                <kbd class="text-[9px] bg-slate-800 border border-slate-700 px-1 rounded text-amber-400 font-semibold">1</kbd> GOLD
+            </button>
+            <button onclick="selectCommodity('SILVER')" class="px-2.5 py-1 rounded hover:bg-slate-800 text-slate-300 transition flex items-center gap-1.5">
+                <kbd class="text-[9px] bg-slate-800 border border-slate-700 px-1 rounded text-slate-300 font-semibold">2</kbd> SILVER
+            </button>
+            <button onclick="selectCommodity('COFFEE')" class="px-2.5 py-1 rounded hover:bg-slate-800 text-slate-300 transition flex items-center gap-1.5">
+                <kbd class="text-[9px] bg-slate-800 border border-slate-700 px-1 rounded text-orange-400 font-semibold">3</kbd> COFFEE
+            </button>
+            <button onclick="selectCommodity('CRUDE_OIL')" class="px-2.5 py-1 rounded hover:bg-slate-800 text-slate-300 transition flex items-center gap-1.5">
+                <kbd class="text-[9px] bg-slate-800 border border-slate-700 px-1 rounded text-cyan-400 font-semibold">4</kbd> CRUDE OIL
+            </button>
+        </div>
+
+        <!-- Right Controls: Status & Desktop Window Controls -->
+        <div class="flex items-center gap-3 text-xs font-mono">
+            <!-- Connection Status -->
+            <div class="flex items-center gap-2 px-2.5 py-1 rounded-full bg-slate-900 border border-slate-800">
+                <span id="connection-indicator" class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+                <span id="connection-status" class="text-slate-300 text-[11px]">Connecting...</span>
+            </div>
+            
+            <div class="text-slate-400 hidden sm:block text-[11px]">
+                <span id="server-clock" class="text-slate-200">--:--:--</span>
+            </div>
+
+            <div class="h-4 w-[1px] bg-slate-800"></div>
+
+            <!-- Window / App Buttons -->
+            <div class="flex items-center gap-1.5">
+                <button onclick="toggleAudioAlerts()" id="btn-audio-toggle" title="Toggle Audio Alerts" class="p-1.5 rounded-lg bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-300 hover:text-white transition">
+                    <svg id="icon-sound-on" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" /></svg>
+                    <svg id="icon-sound-off" class="w-4 h-4 hidden text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" /></svg>
+                </button>
+
+                <button onclick="toggleFullscreen()" title="Toggle Fullscreen [F11]" class="p-1.5 rounded-lg bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-300 hover:text-white transition">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg>
+                </button>
+
+                <button onclick="promptQuitApp()" title="Exit Application [Ctrl+Q]" class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-rose-950/40 border border-rose-800/60 hover:bg-rose-900/60 text-rose-300 hover:text-white transition">
+                    <span class="text-xs">✖</span>
+                    <span class="text-[11px] font-semibold">EXIT</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-1 p-4 lg:p-6 space-y-5 max-w-[1720px] mx-auto w-full">
+
+        <!-- Top Ticker Bar: 4 Commodities -->
+        <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" id="ticker-bar">
+            <!-- Gold Card -->
+            <div id="card-GOLD" class="cursor-pointer transition-all duration-200 bg-terminal-surface border border-terminal-border rounded-xl p-4 hover:border-amber-500/50 hover:shadow-[0_0_20px_rgba(234,179,8,0.1)] relative overflow-hidden" onclick="selectCommodity('GOLD')">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="w-2.5 h-2.5 rounded-full bg-amber-400 shadow-[0_0_8px_#eab308]"></span>
+                            <span class="font-bold text-white text-sm">GOLD</span>
+                            <span class="text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-300 border border-amber-500/30">XAU</span>
+                        </div>
+                        <span class="text-[11px] text-slate-400">USD/oz</span>
+                    </div>
+                    <span id="badge-GOLD" class="text-xs font-mono font-medium px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">0.00%</span>
+                </div>
+                <div class="mt-3 flex items-baseline justify-between">
+                    <span id="price-GOLD" class="text-2xl font-bold font-mono-numbers text-white">$2,350.00</span>
+                    <span id="prev-GOLD" class="text-xs font-mono-numbers text-slate-500">Base: $2,350.00</span>
+                </div>
+            </div>
+
+            <!-- Silver Card -->
+            <div id="card-SILVER" class="cursor-pointer transition-all duration-200 bg-terminal-surface border border-terminal-border rounded-xl p-4 hover:border-slate-400/50 hover:shadow-[0_0_20px_rgba(148,163,184,0.1)] relative overflow-hidden" onclick="selectCommodity('SILVER')">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="w-2.5 h-2.5 rounded-full bg-slate-300 shadow-[0_0_8px_#cbd5e1]"></span>
+                            <span class="font-bold text-white text-sm">SILVER</span>
+                            <span class="text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded bg-slate-500/10 text-slate-300 border border-slate-500/30">XAG</span>
+                        </div>
+                        <span class="text-[11px] text-slate-400">USD/oz</span>
+                    </div>
+                    <span id="badge-SILVER" class="text-xs font-mono font-medium px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">0.00%</span>
+                </div>
+                <div class="mt-3 flex items-baseline justify-between">
+                    <span id="price-SILVER" class="text-2xl font-bold font-mono-numbers text-white">$28.50</span>
+                    <span id="prev-SILVER" class="text-xs font-mono-numbers text-slate-500">Base: $28.50</span>
+                </div>
+            </div>
+
+            <!-- Coffee Card -->
+            <div id="card-COFFEE" class="cursor-pointer transition-all duration-200 bg-terminal-surface border border-terminal-border rounded-xl p-4 hover:border-orange-500/50 hover:shadow-[0_0_20px_rgba(249,115,22,0.1)] relative overflow-hidden" onclick="selectCommodity('COFFEE')">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="w-2.5 h-2.5 rounded-full bg-orange-400 shadow-[0_0_8px_#fb923c]"></span>
+                            <span class="font-bold text-white text-sm">COFFEE</span>
+                            <span class="text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded bg-orange-500/10 text-orange-300 border border-orange-500/30">KC</span>
+                        </div>
+                        <span class="text-[11px] text-slate-400">USD/lb</span>
+                    </div>
+                    <span id="badge-COFFEE" class="text-xs font-mono font-medium px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">0.00%</span>
+                </div>
+                <div class="mt-3 flex items-baseline justify-between">
+                    <span id="price-COFFEE" class="text-2xl font-bold font-mono-numbers text-white">$2.20</span>
+                    <span id="prev-COFFEE" class="text-xs font-mono-numbers text-slate-500">Base: $2.20</span>
+                </div>
+            </div>
+
+            <!-- Crude Oil Card -->
+            <div id="card-CRUDE_OIL" class="cursor-pointer transition-all duration-200 bg-terminal-surface border border-terminal-border rounded-xl p-4 hover:border-cyan-500/50 hover:shadow-[0_0_20px_rgba(6,182,212,0.1)] relative overflow-hidden" onclick="selectCommodity('CRUDE_OIL')">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="w-2.5 h-2.5 rounded-full bg-cyan-400 shadow-[0_0_8px_#22d3ee]"></span>
+                            <span class="font-bold text-white text-sm">CRUDE OIL</span>
+                            <span class="text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-300 border border-cyan-500/30">CL</span>
+                        </div>
+                        <span class="text-[11px] text-slate-400">USD/bbl</span>
+                    </div>
+                    <span id="badge-CRUDE_OIL" class="text-xs font-mono font-medium px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">0.00%</span>
+                </div>
+                <div class="mt-3 flex items-baseline justify-between">
+                    <span id="price-CRUDE_OIL" class="text-2xl font-bold font-mono-numbers text-white">$82.00</span>
+                    <span id="prev-CRUDE_OIL" class="text-xs font-mono-numbers text-slate-500">Base: $82.00</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Middle Section: Center Chart (70%) + Right Threshold Setup Form (30%) -->
+        <section class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+
+            <!-- Chart Panel (8 cols) -->
+            <div class="lg:col-span-8 bg-terminal-surface border border-terminal-border rounded-xl p-5 flex flex-col justify-between shadow-xl">
+                <!-- Chart Header & Tabs -->
+                <div class="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-terminal-border/80">
+                    <div class="flex items-center gap-3">
+                        <div class="flex flex-col">
+                            <div class="flex items-center gap-2">
+                                <h2 id="active-commodity-name" class="text-lg font-bold text-white">GOLD</h2>
+                                <span id="active-commodity-code" class="text-xs font-mono px-2 py-0.5 rounded bg-amber-500/10 text-amber-300 border border-amber-500/30">XAU</span>
+                            </div>
+                            <span class="text-xs text-slate-400">Rolling 50 data-point tick stream</span>
+                        </div>
+                        <div class="ml-4 pl-4 border-l border-slate-800 flex items-baseline gap-2">
+                            <span id="active-commodity-price" class="text-2xl font-bold font-mono-numbers text-white">$2,350.00</span>
+                            <span id="active-commodity-unit" class="text-xs text-slate-400">USD/oz</span>
+                        </div>
+                    </div>
+
+                    <!-- Commodity Switcher Tabs -->
+                    <div class="flex items-center bg-slate-900/80 p-1 rounded-lg border border-slate-800 text-xs font-mono">
+                        <button onclick="selectCommodity('GOLD')" id="tab-GOLD" class="px-3 py-1.5 rounded-md transition font-medium bg-amber-500/20 text-amber-300 border border-amber-500/40">GOLD</button>
+                        <button onclick="selectCommodity('SILVER')" id="tab-SILVER" class="px-3 py-1.5 rounded-md transition font-medium text-slate-400 hover:text-slate-200">SILVER</button>
+                        <button onclick="selectCommodity('COFFEE')" id="tab-COFFEE" class="px-3 py-1.5 rounded-md transition font-medium text-slate-400 hover:text-slate-200">COFFEE</button>
+                        <button onclick="selectCommodity('CRUDE_OIL')" id="tab-CRUDE_OIL" class="px-3 py-1.5 rounded-md transition font-medium text-slate-400 hover:text-slate-200">CRUDE OIL</button>
+                    </div>
+                </div>
+
+                <!-- Canvas Container -->
+                <div class="relative w-full h-[360px] pt-4">
+                    <canvas id="marketChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Right Sidebar: Threshold Alert Setup Form + Active Rules (4 cols) -->
+            <div class="lg:col-span-4 flex flex-col gap-4">
+
+                <!-- Alert Form Card -->
+                <div class="bg-terminal-surface border border-terminal-border rounded-xl p-5 shadow-xl">
+                    <div class="flex items-center gap-2 mb-4 pb-3 border-b border-terminal-border">
+                        <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                        </svg>
+                        <h3 class="font-bold text-white text-sm tracking-wide">SET THRESHOLD ALERT</h3>
+                    </div>
+
+                    <form id="alert-form" class="space-y-3.5">
+                        <!-- Commodity Field -->
+                        <div>
+                            <label for="alert-commodity" class="block text-xs font-medium text-slate-400 mb-1">Commodity</label>
+                            <select id="alert-commodity" required class="w-full bg-slate-900 border border-slate-700/80 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-emerald-500 transition">
+                                <option value="GOLD">Gold (XAU) - USD/oz</option>
+                                <option value="SILVER">Silver (XAG) - USD/oz</option>
+                                <option value="COFFEE">Coffee (KC) - USD/lb</option>
+                                <option value="CRUDE_OIL">Crude Oil (CL) - USD/bbl</option>
+                            </select>
+                        </div>
+
+                        <!-- Condition Field -->
+                        <div>
+                            <label for="alert-condition" class="block text-xs font-medium text-slate-400 mb-1">Trigger Condition</label>
+                            <select id="alert-condition" required class="w-full bg-slate-900 border border-slate-700/80 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-emerald-500 transition">
+                                <option value="GREATER_THAN_OR_EQUAL">&ge; Greater Than or Equal To</option>
+                                <option value="LESS_THAN_OR_EQUAL">&le; Less Than or Equal To</option>
+                            </select>
+                        </div>
+
+                        <!-- Target Price Field -->
+                        <div>
+                            <div class="flex justify-between items-center mb-1">
+                                <label for="alert-target-price" class="text-xs font-medium text-slate-400">Target Price</label>
+                                <span id="suggested-price-label" class="text-[11px] text-slate-500 font-mono">Current: $2,350.00</span>
+                            </div>
+                            <div class="relative">
+                                <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-500 text-sm">$</span>
+                                <input type="number" step="0.01" min="0" id="alert-target-price" required placeholder="e.g. 2380.00" class="w-full pl-7 bg-slate-900 border border-slate-700/80 rounded-lg px-3 py-2 text-sm font-mono text-white focus:outline-none focus:border-emerald-500 transition placeholder:text-slate-600">
+                            </div>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <button type="submit" id="btn-create-alert" class="w-full py-2.5 px-4 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-900/30 transition duration-150">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                            </svg>
+                            Arm Alert Trigger
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Active Rules List Card -->
+                <div class="bg-terminal-surface border border-terminal-border rounded-xl p-5 shadow-xl flex-1 flex flex-col">
+                    <div class="flex items-center justify-between mb-3 pb-2 border-b border-terminal-border">
+                        <div class="flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                            <h3 class="font-bold text-white text-xs tracking-wide uppercase">Active Rules (<span id="active-alert-count">0</span>)</h3>
+                        </div>
+                        <button onclick="fetchActiveAlerts()" class="text-slate-400 hover:text-slate-200 text-xs">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                            </svg>
+                        </button>
+                    </div>
+
+                    <div id="active-rules-container" class="space-y-2 overflow-y-auto max-h-[190px] pr-1 flex-1">
+                        <div class="text-center py-6 text-slate-500 text-xs font-mono">No active alert triggers</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Bottom Section: Alert Notification Log (Terminal Style) -->
+        <section class="bg-terminal-surface border border-terminal-border rounded-xl p-5 shadow-xl">
+            <div class="flex items-center justify-between mb-3 pb-3 border-b border-terminal-border">
+                <div class="flex items-center gap-3">
+                    <div class="w-2 h-2 rounded-full bg-rose-500 shadow-[0_0_8px_#f43f5e]"></div>
+                    <h3 class="font-bold text-white text-sm tracking-wide">REAL-TIME ALERT NOTIFICATION LOG</h3>
+                    <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">TOPIC: /topic/alerts</span>
+                </div>
+                <button onclick="clearNotificationLog()" class="text-xs font-mono text-slate-400 hover:text-slate-200 px-2 py-1 rounded bg-slate-900 border border-slate-800 hover:border-slate-700 transition">
+                    CLEAR LOGS
+                </button>
+            </div>
+
+            <!-- Notifications Stream Container -->
+            <div id="alert-logs-container" class="space-y-2 max-h-[220px] overflow-y-auto font-mono text-xs pr-1">
+                <div id="empty-logs-placeholder" class="text-slate-500 text-center py-6 font-mono text-xs">
+                    Listening on WebSocket STOMP broker... Triggered notifications will stream here in real time.
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Desktop Status Footer -->
+    <footer class="border-t border-terminal-border bg-[#090d16] px-6 py-2 flex flex-wrap items-center justify-between text-[11px] font-mono text-slate-400 select-none">
+        <div class="flex items-center gap-4">
+            <span class="flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                <span class="text-slate-300">DESKTOP TERMINAL RUNTIME</span>
+            </span>
+            <span class="hidden md:inline text-slate-700">|</span>
+            <span class="hidden md:inline">HOST: <span class="text-slate-300">127.0.0.1:18080</span></span>
+            <span class="hidden md:inline text-slate-700">|</span>
+            <span id="footer-uptime">UPTIME: 0s</span>
+        </div>
+        <div class="flex items-center gap-3">
+            <span class="text-slate-500">HOTKEYS:</span>
+            <span class="px-1.5 py-0.5 rounded bg-slate-900 text-slate-300 border border-slate-800">[1-4] SWITCH</span>
+            <span class="px-1.5 py-0.5 rounded bg-slate-900 text-slate-300 border border-slate-800">[F11] FULLSCREEN</span>
+            <span class="px-1.5 py-0.5 rounded bg-slate-900 text-slate-300 border border-slate-800">[CTRL+Q] EXIT</span>
+        </div>
+    </footer>
+
+    <!-- Desktop Exit Confirmation Modal -->
+    <div id="desktop-exit-modal" class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm hidden items-center justify-center p-4">
+        <div class="bg-terminal-surface border border-terminal-border rounded-2xl max-w-md w-full p-6 shadow-2xl relative">
+            <div class="flex items-center gap-3 mb-4">
+                <div class="w-10 h-10 rounded-xl bg-rose-500/10 border border-rose-500/30 flex items-center justify-center text-rose-400 font-bold text-lg">
+                    ✖
+                </div>
+                <div>
+                    <h3 class="text-base font-bold text-white">Exit MarketScout Application?</h3>
+                    <p class="text-xs text-slate-400 font-mono">Real-time commodity stream will disconnect</p>
+                </div>
+            </div>
+
+            <p class="text-xs text-slate-300 mb-6 leading-relaxed">
+                Are you sure you want to quit MarketScout? This will stop the local Spring server and close the desktop application window.
+            </p>
+
+            <div class="flex items-center justify-end gap-3 font-mono text-xs">
+                <button onclick="closeQuitPrompt()" class="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition">
+                    CANCEL
+                </button>
+                <button onclick="confirmExitApp()" id="btn-confirm-exit" class="px-4 py-2 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-semibold shadow-lg shadow-rose-900/30 transition flex items-center gap-2">
+                    <span>SHUTDOWN & QUIT</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Floating Toast Container for Real-time Alert Popups -->
+    <div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col gap-2 max-w-sm pointer-events-none"></div>
+
+    <!-- Application Script -->
+    <script src="/js/app.js"></script>
+</body>
+</html>
