@@ -9,6 +9,8 @@ spring:
     driver-class-name: org.sqlite.JDBC
 
 logging:
+  file:
+    name: marketscout.log
   level:
     root: WARN
     com.marketscout: INFO

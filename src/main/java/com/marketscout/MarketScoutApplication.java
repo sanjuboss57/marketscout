@@ -30,55 +30,44 @@ public class MarketScoutApplication {
     private static final String APP_URL = "http://localhost:18080";
     private static final String APP_NAME = "MarketScout";
     private static final AtomicReference<ApplicationContext> appContext = new AtomicReference<>();
+    private static volatile javafx.stage.Stage fxPrimaryStage;
 
     public static void main(String[] args) {
         System.setProperty("java.awt.headless", "false");
-
-        var executor = Executors.newSingleThreadExecutor(r -> {
-            Thread t = new Thread(r, "spring-main");
-            t.setDaemon(false);
-            return t;
-        });
-
-        executor.submit(() -> {
-            ApplicationContext ctx = SpringApplication.run(MarketScoutApplication.class, args);
+        ApplicationContext ctx = null;
+        try {
+            ctx = SpringApplication.run(MarketScoutApplication.class, args);
             appContext.set(ctx);
-        });
+        } catch (Throwable t) {
+            log.severe("Failed to start Spring Boot engine: " + t.getMessage());
+            t.printStackTrace();
+            return;
+        }
 
-        waitForServerThenLaunchDesktop();
-    }
-
-    // ───────────────────────────────────────────────────────────
-    //  Server readiness poll → open JavaFX + browser + system tray
-    // ───────────────────────────────────────────────────────────
-    private static void waitForServerThenLaunchDesktop() {
-        var scheduler = Executors.newSingleThreadScheduledExecutor(r -> {
-            Thread t = new Thread(r, "startup-watchdog");
-            t.setDaemon(true);
-            return t;
-        });
-
-        var httpClient = HttpClient.newHttpClient();
-        scheduler.scheduleAtFixedRate(() -> {
-            try {
-                var req = HttpRequest.newBuilder(URI.create(APP_URL)).GET().build();
-                var resp = httpClient.send(req, HttpResponse.BodyHandlers.discarding());
-                if (resp.statusCode() < 500 && appContext.get() != null) {
-                    scheduler.shutdown();
-
-                    // Launch Native JavaFX Desktop UI
-                    launchJavaFX(appContext.get());
-
-                    // Transition to AWT event thread for System Tray and Desktop Mode
-                    EventQueue.invokeLater(() -> {
-                        launchDesktopWindow();
-                        installSystemTray();
-                    });
+        // Launch Standalone Desktop Application Window & System Tray
+        try {
+            EventQueue.invokeLater(() -> {
+                try {
+                    launchDesktopWindow();
+                } catch (Throwable t) {
+                    log.warning("Could not launch desktop window: " + t.getMessage());
                 }
-            } catch (IOException | InterruptedException ignored) {
-                // Server not yet ready
+                try {
+                    installSystemTray();
+                } catch (Throwable t) {
+                    log.warning("Could not install system tray: " + t.getMessage());
+                }
+            });
+        } catch (Throwable t) {
+            log.warning("Could not schedule AWT tasks: " + t.getMessage());
+        }
+
+        // Keep main thread alive for the lifetime of the desktop process
+        try {
+            while (true) {
+                Thread.sleep(10000);
             }
-        }, 500, 500, TimeUnit.MILLISECONDS);
+        } catch (InterruptedException ignored) {}
     }
 
     // ───────────────────────────────────────────────────────────
@@ -86,16 +75,26 @@ public class MarketScoutApplication {
     // ───────────────────────────────────────────────────────────
     public static void launchJavaFX(ApplicationContext context) {
         if (context == null) return;
+        if (fxPrimaryStage != null) {
+            javafx.application.Platform.runLater(() -> {
+                fxPrimaryStage.show();
+                fxPrimaryStage.toFront();
+                fxPrimaryStage.requestFocus();
+            });
+            return;
+        }
+
         try {
             javafx.application.Platform.startup(() -> {
                 try {
+                    javafx.application.Platform.setImplicitExit(false);
                     var commodityService = context.getBean(CommodityDataService.class);
                     var alertService = context.getBean(AlertEngineService.class);
                     var dbService = context.getBean(DatabaseService.class);
                     var externalService = context.getBean(ExternalMarketDataService.class);
 
-                    var stage = new javafx.stage.Stage();
-                    new MarketScoutJavaFXApp(commodityService, alertService, dbService, externalService).start(stage);
+                    fxPrimaryStage = new javafx.stage.Stage();
+                    new MarketScoutJavaFXApp(commodityService, alertService, dbService, externalService).start(fxPrimaryStage);
                     log.info("JavaFX Native Desktop Terminal UI started successfully.");
                 } catch (Exception e) {
                     log.warning("Could not launch JavaFX stage: " + e.getMessage());
@@ -109,8 +108,8 @@ public class MarketScoutApplication {
                     var dbService = context.getBean(DatabaseService.class);
                     var externalService = context.getBean(ExternalMarketDataService.class);
 
-                    var stage = new javafx.stage.Stage();
-                    new MarketScoutJavaFXApp(commodityService, alertService, dbService, externalService).start(stage);
+                    fxPrimaryStage = new javafx.stage.Stage();
+                    new MarketScoutJavaFXApp(commodityService, alertService, dbService, externalService).start(fxPrimaryStage);
                 } catch (Exception ex) {
                     log.warning("Could not launch JavaFX stage: " + ex.getMessage());
                 }
@@ -122,112 +121,89 @@ public class MarketScoutApplication {
     //  Launch standalone native desktop application window
     // ───────────────────────────────────────────────────────────
     private static void launchDesktopWindow() {
-        String[] candidatePaths = new String[] {
-            System.getenv("ProgramFiles(x86)") != null ? System.getenv("ProgramFiles(x86)") + "\\Microsoft\\Edge\\Application\\msedge.exe" : null,
-            System.getenv("ProgramFiles") != null ? System.getenv("ProgramFiles") + "\\Microsoft\\Edge\\Application\\msedge.exe" : null,
-            System.getenv("ProgramFiles") != null ? System.getenv("ProgramFiles") + "\\Google\\Chrome\\Application\\chrome.exe" : null,
-            System.getenv("ProgramFiles(x86)") != null ? System.getenv("ProgramFiles(x86)") + "\\Google\\Chrome\\Application\\chrome.exe" : null,
-            System.getenv("LOCALAPPDATA") != null ? System.getenv("LOCALAPPDATA") + "\\Google\\Chrome\\Application\\chrome.exe" : null,
-            System.getenv("LOCALAPPDATA") != null ? System.getenv("LOCALAPPDATA") + "\\Microsoft\\Edge\\Application\\msedge.exe" : null,
-            System.getenv("ProgramFiles") != null ? System.getenv("ProgramFiles") + "\\BraveSoftware\\Brave-Browser\\Application\\brave.exe" : null
+        String[] edgeCandidates = {
+            "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
+            "C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe"
         };
-
-        String browserExe = null;
-        for (String p : candidatePaths) {
-            if (p != null) {
-                java.io.File file = new java.io.File(p);
-                if (file.exists() && file.canExecute()) {
-                    browserExe = p;
-                    break;
+        for (String path : edgeCandidates) {
+            if (new java.io.File(path).exists()) {
+                try {
+                    new ProcessBuilder(path, "--app=" + APP_URL).start();
+                    log.info("Launched MarketScout standalone desktop application window via Edge at: " + path);
+                    return;
+                } catch (Exception e) {
+                    log.warning("Could not launch via " + path + ": " + e.getMessage());
                 }
             }
         }
 
-        if (browserExe != null) {
-            try {
-                String userHome = System.getProperty("user.home", ".");
-                java.io.File profileDir = new java.io.File(userHome, ".marketscout/desktop-profile");
-                if (!profileDir.exists()) {
-                    profileDir.mkdirs();
-                }
-
-                ProcessBuilder pb = new ProcessBuilder(
-                    browserExe,
-                    "--app=" + APP_URL,
-                    "--window-size=1440,900",
-                    "--user-data-dir=" + profileDir.getAbsolutePath(),
-                    "--app-id=MarketScoutDesktop",
-                    "--disable-features=Translate,ChromeWhatsNewUI",
-                    "--no-first-run",
-                    "--no-default-browser-check"
-                );
-                pb.start();
-                log.info("Launched MarketScout standalone desktop application window via: " + browserExe);
-                return;
-            } catch (Exception ex) {
-                log.warning("Failed to launch standalone app window: " + ex.getMessage());
-            }
-        }
-
+        // Fallback: system browse
         if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
             try {
                 Desktop.getDesktop().browse(URI.create(APP_URL));
-                log.info("Fallback: Opened browser at " + APP_URL);
+                log.info("Fallback: Opened default browser at " + APP_URL);
+                return;
             } catch (IOException e) {
                 log.severe("Failed to open browser: " + e.getMessage());
             }
-        } else {
-            log.warning("Desktop browse not supported; navigate manually to " + APP_URL);
         }
+
+        try {
+            new ProcessBuilder("cmd", "/c", "start", APP_URL).start();
+        } catch (Exception ignored) {}
     }
 
     // ───────────────────────────────────────────────────────────
     //  Install a system-tray icon with a context menu
     // ───────────────────────────────────────────────────────────
     private static void installSystemTray() {
-        if (!SystemTray.isSupported()) {
-            log.warning("System tray is not supported on this platform.");
-            return;
-        }
-
-        Image trayImage = loadTrayIcon();
-        var tray = SystemTray.getSystemTray();
-        var popup = new PopupMenu();
-
-        // "Open JavaFX Native UI" item
-        var openJavaFXItem = new MenuItem("🖥️  Open JavaFX Native UI");
-        openJavaFXItem.addActionListener((ActionEvent e) -> launchJavaFX(appContext.get()));
-        popup.add(openJavaFXItem);
-
-        // "Open Web Dashboard" item
-        var openItem = new MenuItem("📈  Open Web Terminal Window");
-        openItem.addActionListener((ActionEvent e) -> launchDesktopWindow());
-        popup.add(openItem);
-
-        popup.addSeparator();
-
-        // "Quit" item
-        var quitItem = new MenuItem("✖  Quit MarketScout");
-        quitItem.addActionListener((ActionEvent e) -> {
-            tray.remove(tray.getTrayIcons().length > 0 ? tray.getTrayIcons()[0] : null);
-            System.exit(0);
-        });
-        popup.add(quitItem);
-
-        var trayIcon = new TrayIcon(trayImage, APP_NAME, popup);
-        trayIcon.setImageAutoSize(true);
-        trayIcon.addActionListener((ActionEvent e) -> launchJavaFX(appContext.get())); // double-click opens JavaFX
-
         try {
+            if (!SystemTray.isSupported()) {
+                log.warning("System tray is not supported on this platform.");
+                return;
+            }
+
+            Image trayImage = loadTrayIcon();
+            var tray = SystemTray.getSystemTray();
+            var popup = new PopupMenu();
+
+            // "Open JavaFX Native UI" item
+            var openJavaFXItem = new MenuItem("🖥️  Open JavaFX Native UI");
+            openJavaFXItem.addActionListener((ActionEvent e) -> launchJavaFX(appContext.get()));
+            popup.add(openJavaFXItem);
+
+            // "Open Web Dashboard" item
+            var openItem = new MenuItem("📈  Open Web Terminal Window");
+            openItem.addActionListener((ActionEvent e) -> launchDesktopWindow());
+            popup.add(openItem);
+
+            popup.addSeparator();
+
+            // "Quit" item
+            var quitItem = new MenuItem("✖  Quit MarketScout");
+            quitItem.addActionListener((ActionEvent e) -> {
+                try {
+                    tray.remove(tray.getTrayIcons().length > 0 ? tray.getTrayIcons()[0] : null);
+                } catch (Exception ignored) {}
+                System.exit(0);
+            });
+            popup.add(quitItem);
+
+            var trayIcon = new TrayIcon(trayImage, APP_NAME, popup);
+            trayIcon.setImageAutoSize(true);
+            trayIcon.addActionListener((ActionEvent e) -> launchJavaFX(appContext.get()));
+
             tray.add(trayIcon);
-            trayIcon.displayMessage(
-                    APP_NAME + " Desktop Terminal",
-                    "JavaFX Client & Spring Server active at " + APP_URL,
-                    TrayIcon.MessageType.INFO
-            );
             log.info("System tray icon installed.");
-        } catch (AWTException e) {
-            log.severe("Could not add tray icon: " + e.getMessage());
+            try {
+                trayIcon.displayMessage(
+                        APP_NAME + " Desktop Terminal",
+                        "JavaFX Client & Spring Server active at " + APP_URL,
+                        TrayIcon.MessageType.INFO
+                );
+            } catch (Exception ignored) {}
+        } catch (Throwable t) {
+            log.warning("Could not setup system tray: " + t.getMessage());
         }
     }
 

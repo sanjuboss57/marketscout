@@ -93,6 +93,8 @@ public class MarketScoutJavaFXApp {
         primaryStage.setMinWidth(900);
         primaryStage.setMinHeight(600);
         primaryStage.show();
+        primaryStage.toFront();
+        primaryStage.requestFocus();
 
         // ───────────────────────────────────────────────────────────
         //  Concurrency: Background Worker Pool for Live Polling
