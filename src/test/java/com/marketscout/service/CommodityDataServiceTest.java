@@ -2,8 +2,6 @@ package com.marketscout.service;
 
 import com.marketscout.model.Commodity;
 import com.marketscout.model.CommodityPrice;
-import com.marketscout.service.AlertEngineService;
-import com.marketscout.service.CommodityDataService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -19,6 +17,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
+@SuppressWarnings("null")
 class CommodityDataServiceTest {
 
     @Mock
