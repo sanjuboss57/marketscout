@@ -33,7 +33,8 @@ import java.util.concurrent.TimeUnit;
  * 
  * Demonstrates:
  * 1. Panes: BorderPane, StackPane, GridPane, HBox, VBox
- * 2. UI Controls: PasswordField, TextField, TableView, TableColumn, ComboBox, Button, Label, ProgressBar
+ * 2. UI Controls: PasswordField, TextField, TableView, TableColumn, ComboBox,
+ * Button, Label, ProgressBar
  * 3. Layout Responsiveness: Width & Height Property Binding
  * 4. Concurrency: Multi-threading background task + Platform.runLater()
  * 5. Complete CRUD Operations wired to SQLite database
@@ -55,9 +56,9 @@ public class MarketScoutJavaFXApp {
     private Label forexRatesLabel;
 
     public MarketScoutJavaFXApp(CommodityDataService commodityDataService,
-                               AlertEngineService alertEngineService,
-                               DatabaseService databaseService,
-                               ExternalMarketDataService externalMarketDataService) {
+            AlertEngineService alertEngineService,
+            DatabaseService databaseService,
+            ExternalMarketDataService externalMarketDataService) {
         this.commodityDataService = commodityDataService;
         this.alertEngineService = alertEngineService;
         this.databaseService = databaseService;
@@ -68,7 +69,7 @@ public class MarketScoutJavaFXApp {
         primaryStage.setTitle("MarketScout | JavaFX Desktop Trading Terminal");
 
         // ───────────────────────────────────────────────────────────
-        //  StackPane (Layer 1: Dashboard, Layer 2: Login Overlay)
+        // StackPane (Layer 1: Dashboard, Layer 2: Login Overlay)
         // ───────────────────────────────────────────────────────────
         StackPane rootStackPane = new StackPane();
         rootStackPane.setStyle("-fx-background-color: #080c14;");
@@ -84,7 +85,7 @@ public class MarketScoutJavaFXApp {
         Scene scene = new Scene(rootStackPane, 1200, 750);
 
         // ───────────────────────────────────────────────────────────
-        //  Layout Responsiveness: Dynamic Property Constraints
+        // Layout Responsiveness: Dynamic Property Constraints
         // ───────────────────────────────────────────────────────────
         mainBorderPane.prefWidthProperty().bind(scene.widthProperty());
         mainBorderPane.prefHeightProperty().bind(scene.heightProperty());
@@ -97,7 +98,7 @@ public class MarketScoutJavaFXApp {
         primaryStage.requestFocus();
 
         // ───────────────────────────────────────────────────────────
-        //  Concurrency: Background Worker Pool for Live Polling
+        // Concurrency: Background Worker Pool for Live Polling
         // ───────────────────────────────────────────────────────────
         startBackgroundPolling();
 
@@ -121,7 +122,8 @@ public class MarketScoutJavaFXApp {
         title.setFont(Font.font("Segoe UI", FontWeight.BOLD, 18));
         title.setTextFill(Color.web("#10b981"));
 
-        Label subtitle = new Label("Please enter credentials to unlock live commodity terminal and SQLite CRUD access.");
+        Label subtitle = new Label(
+                "Please enter credentials to unlock live commodity terminal and SQLite CRUD access.");
         subtitle.setTextFill(Color.web("#94a3b8"));
         subtitle.setFont(Font.font("Segoe UI", 12));
 
@@ -130,7 +132,8 @@ public class MarketScoutJavaFXApp {
         formGrid.setVgap(12);
         formGrid.setAlignment(Pos.CENTER);
         formGrid.setPadding(new Insets(15));
-        formGrid.setStyle("-fx-background-color: #0d131f; -fx-border-color: #1e293b; -fx-border-radius: 8; -fx-background-radius: 8;");
+        formGrid.setStyle(
+                "-fx-background-color: #0d131f; -fx-border-color: #1e293b; -fx-border-radius: 8; -fx-background-radius: 8;");
 
         Label userLabel = new Label("Username:");
         userLabel.setTextFill(Color.web("#e2e8f0"));
@@ -153,7 +156,8 @@ public class MarketScoutJavaFXApp {
         errorLabel.setTextFill(Color.web("#f43f5e"));
 
         Button loginBtn = new Button("Unlock Terminal");
-        loginBtn.setStyle("-fx-background-color: #059669; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 8 20; -fx-cursor: hand;");
+        loginBtn.setStyle(
+                "-fx-background-color: #059669; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 8 20; -fx-cursor: hand;");
 
         loginBtn.setOnAction(e -> {
             String u = userField.getText().trim();
@@ -189,7 +193,8 @@ public class MarketScoutJavaFXApp {
         brand.setTextFill(Color.web("#10b981"));
 
         Label badge = new Label("JAVAFX 21 NATIVE CLIENT");
-        badge.setStyle("-fx-background-color: #064e3b; -fx-text-fill: #34d399; -fx-font-size: 10; -fx-padding: 2 6; -fx-font-weight: bold;");
+        badge.setStyle(
+                "-fx-background-color: #064e3b; -fx-text-fill: #34d399; -fx-font-size: 10; -fx-padding: 2 6; -fx-font-weight: bold;");
 
         forexRatesLabel = new Label("Connecting to External Market API (open.er-api.com)...");
         forexRatesLabel.setStyle("-fx-text-fill: #94a3b8; -fx-font-family: 'Consolas'; -fx-font-size: 11;");
@@ -198,7 +203,8 @@ public class MarketScoutJavaFXApp {
         HBox.setHgrow(spacer, Priority.ALWAYS);
 
         Button refreshForexBtn = new Button("↻ Fetch Live FX");
-        refreshForexBtn.setStyle("-fx-background-color: #1e293b; -fx-text-fill: #cbd5e1; -fx-font-size: 11; -fx-cursor: hand;");
+        refreshForexBtn.setStyle(
+                "-fx-background-color: #1e293b; -fx-text-fill: #cbd5e1; -fx-font-size: 11; -fx-cursor: hand;");
         refreshForexBtn.setOnAction(e -> {
             new Thread(() -> {
                 externalMarketDataService.fetchAndParseExternalMarketData();
@@ -229,7 +235,8 @@ public class MarketScoutJavaFXApp {
         bottomBar.setPadding(new Insets(6, 15, 6, 15));
         bottomBar.setStyle("-fx-background-color: #0b101b; -fx-border-color: #1a2436; -fx-border-width: 1 0 0 0;");
 
-        statusLabel = new Label("System Initialized • SQLite DB Active (marketscout.db) • ThreadPool: 2 Active Threads");
+        statusLabel = new Label(
+                "System Initialized • SQLite DB Active (marketscout.db) • ThreadPool: 2 Active Threads");
         statusLabel.setStyle("-fx-text-fill: #64748b; -fx-font-family: 'Consolas'; -fx-font-size: 11;");
 
         ProgressBar progressBar = new ProgressBar();
@@ -320,13 +327,16 @@ public class MarketScoutJavaFXApp {
         targetField.setStyle("-fx-background-color: #1a2436; -fx-text-fill: white;");
 
         Button createBtn = new Button("➕ Create (C)");
-        createBtn.setStyle("-fx-background-color: #059669; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand;");
+        createBtn.setStyle(
+                "-fx-background-color: #059669; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand;");
 
         Button updateBtn = new Button("✏️ Update (U)");
-        updateBtn.setStyle("-fx-background-color: #0284c7; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand;");
+        updateBtn.setStyle(
+                "-fx-background-color: #0284c7; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand;");
 
         Button deleteBtn = new Button("✖ Delete (D)");
-        deleteBtn.setStyle("-fx-background-color: #e11d48; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand;");
+        deleteBtn.setStyle(
+                "-fx-background-color: #e11d48; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand;");
 
         form.add(new Label("Asset:"), 0, 0);
         form.add(commodityCombo, 1, 0);
@@ -444,8 +454,7 @@ public class MarketScoutJavaFXApp {
                         c.getCode(),
                         c.getDisplayName(),
                         price.getCurrentPrice(),
-                        price.getChangePercent()
-                ));
+                        price.getChangePercent()));
             }
         }
     }
@@ -458,8 +467,7 @@ public class MarketScoutJavaFXApp {
                     r.getCommodity().name(),
                     r.getCondition().name(),
                     r.getTargetPrice(),
-                    r.isTriggered() ? "TRIGGERED" : "ACTIVE"
-            ));
+                    r.isTriggered() ? "TRIGGERED" : "ACTIVE"));
         }
     }
 
