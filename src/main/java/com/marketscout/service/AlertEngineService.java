@@ -112,6 +112,7 @@ public class AlertEngineService {
         return removed;
     }
 
+    @SuppressWarnings("null")
     public void evaluatePrice(CommodityPrice price) {
         if (price == null || price.getCommodity() == null) {
             return;

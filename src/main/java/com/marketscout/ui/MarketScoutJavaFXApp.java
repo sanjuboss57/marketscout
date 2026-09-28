@@ -275,7 +275,10 @@ public class MarketScoutJavaFXApp {
         colChange.setCellValueFactory(c -> c.getValue().changeProperty);
         colChange.setPrefWidth(90);
 
-        table.getColumns().addAll(colCode, colName, colPrice, colChange);
+        table.getColumns().add(colCode);
+        table.getColumns().add(colName);
+        table.getColumns().add(colPrice);
+        table.getColumns().add(colChange);
         VBox.setVgrow(table, Priority.ALWAYS);
 
         box.getChildren().addAll(heading, table);
@@ -352,7 +355,10 @@ public class MarketScoutJavaFXApp {
         TableColumn<AlertRuleRow, String> colStatus = new TableColumn<>("Status");
         colStatus.setCellValueFactory(a -> a.getValue().statusProperty);
 
-        alertTable.getColumns().addAll(colAsset, colCond, colTarget, colStatus);
+        alertTable.getColumns().add(colAsset);
+        alertTable.getColumns().add(colCond);
+        alertTable.getColumns().add(colTarget);
+        alertTable.getColumns().add(colStatus);
         VBox.setVgrow(alertTable, Priority.ALWAYS);
 
         // Wire CRUD Actions:

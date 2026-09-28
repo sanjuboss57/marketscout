@@ -67,6 +67,7 @@ public class CommodityDataService implements MarketDataProvider {
         log.info("Initialized baseline prices and histories for {} commodities", Commodity.values().length);
     }
 
+    @SuppressWarnings("null")
     @Scheduled(fixedRate = 2000)
     public void simulatePriceMovement() {
         for (Commodity commodity : Commodity.values()) {
@@ -125,6 +126,7 @@ public class CommodityDataService implements MarketDataProvider {
     }
 
     @Override
+    @SuppressWarnings("null")
     public void updatePrice(Commodity commodity, double newPrice) {
         CommodityPrice current = latestPrices.get(commodity);
         double prev = current != null ? current.getCurrentPrice() : commodity.getBasePrice();
