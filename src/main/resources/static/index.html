@@ -100,20 +100,17 @@
             </div>
         </div>
 
-        <!-- Center: Commodity Quick Switcher Hotkeys -->
-        <div class="hidden xl:flex items-center gap-1 text-xs font-mono bg-slate-900/80 p-1 rounded-lg border border-slate-800">
-            <button onclick="selectCommodity('GOLD')" class="px-2.5 py-1 rounded hover:bg-slate-800 text-slate-300 transition flex items-center gap-1.5">
-                <kbd class="text-[9px] bg-slate-800 border border-slate-700 px-1 rounded text-amber-400 font-semibold">1</kbd> GOLD
-            </button>
-            <button onclick="selectCommodity('SILVER')" class="px-2.5 py-1 rounded hover:bg-slate-800 text-slate-300 transition flex items-center gap-1.5">
-                <kbd class="text-[9px] bg-slate-800 border border-slate-700 px-1 rounded text-slate-300 font-semibold">2</kbd> SILVER
-            </button>
-            <button onclick="selectCommodity('COFFEE')" class="px-2.5 py-1 rounded hover:bg-slate-800 text-slate-300 transition flex items-center gap-1.5">
-                <kbd class="text-[9px] bg-slate-800 border border-slate-700 px-1 rounded text-orange-400 font-semibold">3</kbd> COFFEE
-            </button>
-            <button onclick="selectCommodity('CRUDE_OIL')" class="px-2.5 py-1 rounded hover:bg-slate-800 text-slate-300 transition flex items-center gap-1.5">
-                <kbd class="text-[9px] bg-slate-800 border border-slate-700 px-1 rounded text-cyan-400 font-semibold">4</kbd> CRUDE OIL
-            </button>
+        <!-- Center: Quick Category Selector & Portfolio Shortcut -->
+        <div class="hidden xl:flex items-center gap-2 text-xs font-mono">
+            <div class="flex items-center gap-1 bg-slate-900/80 p-1 rounded-lg border border-slate-800">
+                <button onclick="filterCategory('ALL')" id="cat-btn-ALL" class="px-2.5 py-1 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 transition font-medium">ALL (10)</button>
+                <button onclick="filterCategory('COMMODITY')" id="cat-btn-COMMODITY" class="px-2.5 py-1 rounded text-slate-400 hover:text-amber-300 transition">COMMODITIES (4)</button>
+                <button onclick="filterCategory('CRYPTO')" id="cat-btn-CRYPTO" class="px-2.5 py-1 rounded text-slate-400 hover:text-violet-300 transition">CRYPTO (3)</button>
+                <button onclick="filterCategory('STOCK')" id="cat-btn-STOCK" class="px-2.5 py-1 rounded text-slate-400 hover:text-sky-300 transition">STOCKS (3)</button>
+            </div>
+            <a href="#portfolio-section" class="px-2.5 py-1.5 rounded-lg bg-emerald-950/80 text-emerald-300 border border-emerald-800/80 hover:bg-emerald-900/80 transition flex items-center gap-1.5 font-semibold">
+                <span>💼</span> PORTFOLIO
+            </a>
         </div>
 
         <!-- Right Controls: Status & Desktop Window Controls -->
@@ -152,81 +149,209 @@
     <!-- Main Container -->
     <main class="flex-1 p-4 lg:p-6 space-y-5 max-w-[1720px] mx-auto w-full">
 
-        <!-- Top Ticker Bar: 4 Commodities -->
-        <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" id="ticker-bar">
-            <!-- Gold Card -->
-            <div id="card-GOLD" class="cursor-pointer transition-all duration-200 bg-terminal-surface border border-terminal-border rounded-xl p-4 hover:border-amber-500/50 hover:shadow-[0_0_20px_rgba(234,179,8,0.1)] relative overflow-hidden" onclick="selectCommodity('GOLD')">
+        <!-- Category Filter Chips & Header for Market Watch -->
+        <div class="flex flex-wrap items-center justify-between gap-3">
+            <div class="flex items-center gap-2">
+                <span class="text-xs font-bold uppercase tracking-wider text-slate-400 font-mono">Market Watchlist</span>
+                <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">10 ACTIVE INSTRUMENTS</span>
+            </div>
+            <div class="flex items-center gap-1.5 text-xs font-mono bg-slate-900/90 p-1 rounded-lg border border-slate-800">
+                <button onclick="filterCategory('ALL')" class="cat-pill active px-3 py-1 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 transition">ALL</button>
+                <button onclick="filterCategory('COMMODITY')" class="cat-pill px-3 py-1 rounded-md text-slate-400 hover:text-amber-300 transition">COMMODITIES (4)</button>
+                <button onclick="filterCategory('CRYPTO')" class="cat-pill px-3 py-1 rounded-md text-slate-400 hover:text-violet-300 transition">CRYPTO (3)</button>
+                <button onclick="filterCategory('STOCK')" class="cat-pill px-3 py-1 rounded-md text-slate-400 hover:text-sky-300 transition">STOCKS (3)</button>
+            </div>
+        </div>
+
+        <!-- Top Ticker Grid: 10 Assets (Commodities, Crypto, Stocks) -->
+        <section class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3.5" id="ticker-bar">
+            <!-- 1. Gold Card -->
+            <div id="card-GOLD" data-category="COMMODITY" class="ticker-card cursor-pointer transition-all duration-200 bg-terminal-surface border border-terminal-border rounded-xl p-3.5 hover:border-amber-500/50 hover:shadow-[0_0_20px_rgba(234,179,8,0.1)] relative overflow-hidden" onclick="selectCommodity('GOLD')">
                 <div class="flex items-start justify-between">
                     <div>
-                        <div class="flex items-center gap-2">
-                            <span class="w-2.5 h-2.5 rounded-full bg-amber-400 shadow-[0_0_8px_#eab308]"></span>
-                            <span class="font-bold text-white text-sm">GOLD</span>
-                            <span class="text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-300 border border-amber-500/30">XAU</span>
+                        <div class="flex items-center gap-1.5">
+                            <span class="w-2 h-2 rounded-full bg-amber-400 shadow-[0_0_8px_#eab308]"></span>
+                            <span class="font-bold text-white text-xs">GOLD</span>
+                            <span class="text-[9px] font-mono font-semibold px-1 py-0.2 rounded bg-amber-500/10 text-amber-300 border border-amber-500/30">XAU</span>
                         </div>
-                        <span class="text-[11px] text-slate-400">USD/oz</span>
+                        <span class="text-[10px] text-slate-400">USD/oz &bull; Commodity</span>
                     </div>
-                    <span id="badge-GOLD" class="text-xs font-mono font-medium px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">0.00%</span>
+                    <span id="badge-GOLD" class="text-[11px] font-mono font-medium px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">0.00%</span>
                 </div>
-                <div class="mt-3 flex items-baseline justify-between">
-                    <span id="price-GOLD" class="text-2xl font-bold font-mono-numbers text-white">$2,350.00</span>
-                    <span id="prev-GOLD" class="text-xs font-mono-numbers text-slate-500">Base: $2,350.00</span>
+                <div class="mt-2.5 flex items-baseline justify-between">
+                    <span id="price-GOLD" class="text-xl font-bold font-mono-numbers text-white">$2,350.00</span>
+                    <span id="prev-GOLD" class="text-[10px] font-mono-numbers text-slate-500">Base: $2,350</span>
                 </div>
             </div>
 
-            <!-- Silver Card -->
-            <div id="card-SILVER" class="cursor-pointer transition-all duration-200 bg-terminal-surface border border-terminal-border rounded-xl p-4 hover:border-slate-400/50 hover:shadow-[0_0_20px_rgba(148,163,184,0.1)] relative overflow-hidden" onclick="selectCommodity('SILVER')">
+            <!-- 2. Silver Card -->
+            <div id="card-SILVER" data-category="COMMODITY" class="ticker-card cursor-pointer transition-all duration-200 bg-terminal-surface border border-terminal-border rounded-xl p-3.5 hover:border-slate-400/50 hover:shadow-[0_0_20px_rgba(148,163,184,0.1)] relative overflow-hidden" onclick="selectCommodity('SILVER')">
                 <div class="flex items-start justify-between">
                     <div>
-                        <div class="flex items-center gap-2">
-                            <span class="w-2.5 h-2.5 rounded-full bg-slate-300 shadow-[0_0_8px_#cbd5e1]"></span>
-                            <span class="font-bold text-white text-sm">SILVER</span>
-                            <span class="text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded bg-slate-500/10 text-slate-300 border border-slate-500/30">XAG</span>
+                        <div class="flex items-center gap-1.5">
+                            <span class="w-2 h-2 rounded-full bg-slate-300 shadow-[0_0_8px_#cbd5e1]"></span>
+                            <span class="font-bold text-white text-xs">SILVER</span>
+                            <span class="text-[9px] font-mono font-semibold px-1 py-0.2 rounded bg-slate-500/10 text-slate-300 border border-slate-500/30">XAG</span>
                         </div>
-                        <span class="text-[11px] text-slate-400">USD/oz</span>
+                        <span class="text-[10px] text-slate-400">USD/oz &bull; Commodity</span>
                     </div>
-                    <span id="badge-SILVER" class="text-xs font-mono font-medium px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">0.00%</span>
+                    <span id="badge-SILVER" class="text-[11px] font-mono font-medium px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">0.00%</span>
                 </div>
-                <div class="mt-3 flex items-baseline justify-between">
-                    <span id="price-SILVER" class="text-2xl font-bold font-mono-numbers text-white">$28.50</span>
-                    <span id="prev-SILVER" class="text-xs font-mono-numbers text-slate-500">Base: $28.50</span>
+                <div class="mt-2.5 flex items-baseline justify-between">
+                    <span id="price-SILVER" class="text-xl font-bold font-mono-numbers text-white">$28.50</span>
+                    <span id="prev-SILVER" class="text-[10px] font-mono-numbers text-slate-500">Base: $28.50</span>
                 </div>
             </div>
 
-            <!-- Coffee Card -->
-            <div id="card-COFFEE" class="cursor-pointer transition-all duration-200 bg-terminal-surface border border-terminal-border rounded-xl p-4 hover:border-orange-500/50 hover:shadow-[0_0_20px_rgba(249,115,22,0.1)] relative overflow-hidden" onclick="selectCommodity('COFFEE')">
+            <!-- 3. Coffee Card -->
+            <div id="card-COFFEE" data-category="COMMODITY" class="ticker-card cursor-pointer transition-all duration-200 bg-terminal-surface border border-terminal-border rounded-xl p-3.5 hover:border-orange-500/50 hover:shadow-[0_0_20px_rgba(249,115,22,0.1)] relative overflow-hidden" onclick="selectCommodity('COFFEE')">
                 <div class="flex items-start justify-between">
                     <div>
-                        <div class="flex items-center gap-2">
-                            <span class="w-2.5 h-2.5 rounded-full bg-orange-400 shadow-[0_0_8px_#fb923c]"></span>
-                            <span class="font-bold text-white text-sm">COFFEE</span>
-                            <span class="text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded bg-orange-500/10 text-orange-300 border border-orange-500/30">KC</span>
+                        <div class="flex items-center gap-1.5">
+                            <span class="w-2 h-2 rounded-full bg-orange-400 shadow-[0_0_8px_#fb923c]"></span>
+                            <span class="font-bold text-white text-xs">COFFEE</span>
+                            <span class="text-[9px] font-mono font-semibold px-1 py-0.2 rounded bg-orange-500/10 text-orange-300 border border-orange-500/30">KC</span>
                         </div>
-                        <span class="text-[11px] text-slate-400">USD/lb</span>
+                        <span class="text-[10px] text-slate-400">USD/lb &bull; Agri</span>
                     </div>
-                    <span id="badge-COFFEE" class="text-xs font-mono font-medium px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">0.00%</span>
+                    <span id="badge-COFFEE" class="text-[11px] font-mono font-medium px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">0.00%</span>
                 </div>
-                <div class="mt-3 flex items-baseline justify-between">
-                    <span id="price-COFFEE" class="text-2xl font-bold font-mono-numbers text-white">$2.20</span>
-                    <span id="prev-COFFEE" class="text-xs font-mono-numbers text-slate-500">Base: $2.20</span>
+                <div class="mt-2.5 flex items-baseline justify-between">
+                    <span id="price-COFFEE" class="text-xl font-bold font-mono-numbers text-white">$2.20</span>
+                    <span id="prev-COFFEE" class="text-[10px] font-mono-numbers text-slate-500">Base: $2.20</span>
                 </div>
             </div>
 
-            <!-- Crude Oil Card -->
-            <div id="card-CRUDE_OIL" class="cursor-pointer transition-all duration-200 bg-terminal-surface border border-terminal-border rounded-xl p-4 hover:border-cyan-500/50 hover:shadow-[0_0_20px_rgba(6,182,212,0.1)] relative overflow-hidden" onclick="selectCommodity('CRUDE_OIL')">
+            <!-- 4. Crude Oil Card -->
+            <div id="card-CRUDE_OIL" data-category="COMMODITY" class="ticker-card cursor-pointer transition-all duration-200 bg-terminal-surface border border-terminal-border rounded-xl p-3.5 hover:border-cyan-500/50 hover:shadow-[0_0_20px_rgba(6,182,212,0.1)] relative overflow-hidden" onclick="selectCommodity('CRUDE_OIL')">
                 <div class="flex items-start justify-between">
                     <div>
-                        <div class="flex items-center gap-2">
-                            <span class="w-2.5 h-2.5 rounded-full bg-cyan-400 shadow-[0_0_8px_#22d3ee]"></span>
-                            <span class="font-bold text-white text-sm">CRUDE OIL</span>
-                            <span class="text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-300 border border-cyan-500/30">CL</span>
+                        <div class="flex items-center gap-1.5">
+                            <span class="w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_8px_#22d3ee]"></span>
+                            <span class="font-bold text-white text-xs">CRUDE OIL</span>
+                            <span class="text-[9px] font-mono font-semibold px-1 py-0.2 rounded bg-cyan-500/10 text-cyan-300 border border-cyan-500/30">CL</span>
                         </div>
-                        <span class="text-[11px] text-slate-400">USD/bbl</span>
+                        <span class="text-[10px] text-slate-400">USD/bbl &bull; Energy</span>
                     </div>
-                    <span id="badge-CRUDE_OIL" class="text-xs font-mono font-medium px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">0.00%</span>
+                    <span id="badge-CRUDE_OIL" class="text-[11px] font-mono font-medium px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">0.00%</span>
                 </div>
-                <div class="mt-3 flex items-baseline justify-between">
-                    <span id="price-CRUDE_OIL" class="text-2xl font-bold font-mono-numbers text-white">$82.00</span>
-                    <span id="prev-CRUDE_OIL" class="text-xs font-mono-numbers text-slate-500">Base: $82.00</span>
+                <div class="mt-2.5 flex items-baseline justify-between">
+                    <span id="price-CRUDE_OIL" class="text-xl font-bold font-mono-numbers text-white">$82.00</span>
+                    <span id="prev-CRUDE_OIL" class="text-[10px] font-mono-numbers text-slate-500">Base: $82.00</span>
+                </div>
+            </div>
+
+            <!-- 5. Bitcoin Card -->
+            <div id="card-BITCOIN" data-category="CRYPTO" class="ticker-card cursor-pointer transition-all duration-200 bg-terminal-surface border border-terminal-border rounded-xl p-3.5 hover:border-amber-400/50 hover:shadow-[0_0_20px_rgba(245,158,11,0.15)] relative overflow-hidden" onclick="selectCommodity('BITCOIN')">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <div class="flex items-center gap-1.5">
+                            <span class="w-2 h-2 rounded-full bg-amber-500 shadow-[0_0_8px_#f59e0b]"></span>
+                            <span class="font-bold text-white text-xs">BITCOIN</span>
+                            <span class="text-[9px] font-mono font-semibold px-1 py-0.2 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40">BTC</span>
+                        </div>
+                        <span class="text-[10px] text-slate-400">USD &bull; Crypto 24/7</span>
+                    </div>
+                    <span id="badge-BITCOIN" class="text-[11px] font-mono font-medium px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">0.00%</span>
+                </div>
+                <div class="mt-2.5 flex items-baseline justify-between">
+                    <span id="price-BITCOIN" class="text-xl font-bold font-mono-numbers text-amber-300">$64,500.00</span>
+                    <span id="prev-BITCOIN" class="text-[10px] font-mono-numbers text-slate-500">Base: $64.5k</span>
+                </div>
+            </div>
+
+            <!-- 6. Ethereum Card -->
+            <div id="card-ETHEREUM" data-category="CRYPTO" class="ticker-card cursor-pointer transition-all duration-200 bg-terminal-surface border border-terminal-border rounded-xl p-3.5 hover:border-violet-500/50 hover:shadow-[0_0_20px_rgba(139,92,246,0.15)] relative overflow-hidden" onclick="selectCommodity('ETHEREUM')">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <div class="flex items-center gap-1.5">
+                            <span class="w-2 h-2 rounded-full bg-violet-400 shadow-[0_0_8px_#a78bfa]"></span>
+                            <span class="font-bold text-white text-xs">ETHEREUM</span>
+                            <span class="text-[9px] font-mono font-semibold px-1 py-0.2 rounded bg-violet-500/20 text-violet-300 border border-violet-500/40">ETH</span>
+                        </div>
+                        <span class="text-[10px] text-slate-400">USD &bull; Crypto L1</span>
+                    </div>
+                    <span id="badge-ETHEREUM" class="text-[11px] font-mono font-medium px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">0.00%</span>
+                </div>
+                <div class="mt-2.5 flex items-baseline justify-between">
+                    <span id="price-ETHEREUM" class="text-xl font-bold font-mono-numbers text-violet-300">$3,450.00</span>
+                    <span id="prev-ETHEREUM" class="text-[10px] font-mono-numbers text-slate-500">Base: $3,450</span>
+                </div>
+            </div>
+
+            <!-- 7. Solana Card -->
+            <div id="card-SOLANA" data-category="CRYPTO" class="ticker-card cursor-pointer transition-all duration-200 bg-terminal-surface border border-terminal-border rounded-xl p-3.5 hover:border-teal-400/50 hover:shadow-[0_0_20px_rgba(20,184,166,0.15)] relative overflow-hidden" onclick="selectCommodity('SOLANA')">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <div class="flex items-center gap-1.5">
+                            <span class="w-2 h-2 rounded-full bg-teal-400 shadow-[0_0_8px_#2dd4bf]"></span>
+                            <span class="font-bold text-white text-xs">SOLANA</span>
+                            <span class="text-[9px] font-mono font-semibold px-1 py-0.2 rounded bg-teal-500/20 text-teal-300 border border-teal-500/40">SOL</span>
+                        </div>
+                        <span class="text-[10px] text-slate-400">USD &bull; Crypto High-TPS</span>
+                    </div>
+                    <span id="badge-SOLANA" class="text-[11px] font-mono font-medium px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">0.00%</span>
+                </div>
+                <div class="mt-2.5 flex items-baseline justify-between">
+                    <span id="price-SOLANA" class="text-xl font-bold font-mono-numbers text-teal-300">$145.00</span>
+                    <span id="prev-SOLANA" class="text-[10px] font-mono-numbers text-slate-500">Base: $145.00</span>
+                </div>
+            </div>
+
+            <!-- 8. Apple Card -->
+            <div id="card-APPLE" data-category="STOCK" class="ticker-card cursor-pointer transition-all duration-200 bg-terminal-surface border border-terminal-border rounded-xl p-3.5 hover:border-sky-400/50 hover:shadow-[0_0_20px_rgba(56,189,248,0.15)] relative overflow-hidden" onclick="selectCommodity('APPLE')">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <div class="flex items-center gap-1.5">
+                            <span class="w-2 h-2 rounded-full bg-sky-400 shadow-[0_0_8px_#38bdf8]"></span>
+                            <span class="font-bold text-white text-xs">APPLE</span>
+                            <span class="text-[9px] font-mono font-semibold px-1 py-0.2 rounded bg-sky-500/20 text-sky-300 border border-sky-500/40">AAPL</span>
+                        </div>
+                        <span class="text-[10px] text-slate-400">USD/sh &bull; NASDAQ</span>
+                    </div>
+                    <span id="badge-APPLE" class="text-[11px] font-mono font-medium px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">0.00%</span>
+                </div>
+                <div class="mt-2.5 flex items-baseline justify-between">
+                    <span id="price-APPLE" class="text-xl font-bold font-mono-numbers text-white">$225.00</span>
+                    <span id="prev-APPLE" class="text-[10px] font-mono-numbers text-slate-500">Base: $225.00</span>
+                </div>
+            </div>
+
+            <!-- 9. Nvidia Card -->
+            <div id="card-NVIDIA" data-category="STOCK" class="ticker-card cursor-pointer transition-all duration-200 bg-terminal-surface border border-terminal-border rounded-xl p-3.5 hover:border-emerald-400/50 hover:shadow-[0_0_20px_rgba(34,197,94,0.15)] relative overflow-hidden" onclick="selectCommodity('NVIDIA')">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <div class="flex items-center gap-1.5">
+                            <span class="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_#4ade80]"></span>
+                            <span class="font-bold text-white text-xs">NVIDIA</span>
+                            <span class="text-[9px] font-mono font-semibold px-1 py-0.2 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">NVDA</span>
+                        </div>
+                        <span class="text-[10px] text-slate-400">USD/sh &bull; AI Hardware</span>
+                    </div>
+                    <span id="badge-NVIDIA" class="text-[11px] font-mono font-medium px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">0.00%</span>
+                </div>
+                <div class="mt-2.5 flex items-baseline justify-between">
+                    <span id="price-NVIDIA" class="text-xl font-bold font-mono-numbers text-emerald-400">$125.00</span>
+                    <span id="prev-NVIDIA" class="text-[10px] font-mono-numbers text-slate-500">Base: $125.00</span>
+                </div>
+            </div>
+
+            <!-- 10. Tesla Card -->
+            <div id="card-TESLA" data-category="STOCK" class="ticker-card cursor-pointer transition-all duration-200 bg-terminal-surface border border-terminal-border rounded-xl p-3.5 hover:border-rose-400/50 hover:shadow-[0_0_20px_rgba(244,63,94,0.15)] relative overflow-hidden" onclick="selectCommodity('TESLA')">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <div class="flex items-center gap-1.5">
+                            <span class="w-2 h-2 rounded-full bg-rose-400 shadow-[0_0_8px_#fb7185]"></span>
+                            <span class="font-bold text-white text-xs">TESLA</span>
+                            <span class="text-[9px] font-mono font-semibold px-1 py-0.2 rounded bg-rose-500/20 text-rose-300 border border-rose-500/40">TSLA</span>
+                        </div>
+                        <span class="text-[10px] text-slate-400">USD/sh &bull; EV/Robotics</span>
+                    </div>
+                    <span id="badge-TESLA" class="text-[11px] font-mono font-medium px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">0.00%</span>
+                </div>
+                <div class="mt-2.5 flex items-baseline justify-between">
+                    <span id="price-TESLA" class="text-xl font-bold font-mono-numbers text-white">$245.00</span>
+                    <span id="prev-TESLA" class="text-[10px] font-mono-numbers text-slate-500">Base: $245.00</span>
                 </div>
             </div>
         </section>
@@ -243,8 +368,9 @@
                             <div class="flex items-center gap-2">
                                 <h2 id="active-commodity-name" class="text-lg font-bold text-white">GOLD</h2>
                                 <span id="active-commodity-code" class="text-xs font-mono px-2 py-0.5 rounded bg-amber-500/10 text-amber-300 border border-amber-500/30">XAU</span>
+                                <span id="active-commodity-category" class="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700 uppercase">COMMODITY</span>
                             </div>
-                            <span class="text-xs text-slate-400">Rolling 50 data-point tick stream</span>
+                            <span class="text-xs text-slate-400">Rolling 50 data-point tick stream with TA indicators</span>
                         </div>
                         <div class="ml-4 pl-4 border-l border-slate-800 flex items-baseline gap-2">
                             <span id="active-commodity-price" class="text-2xl font-bold font-mono-numbers text-white">$2,350.00</span>
@@ -252,12 +378,40 @@
                         </div>
                     </div>
 
-                    <!-- Commodity Switcher Tabs -->
-                    <div class="flex items-center bg-slate-900/80 p-1 rounded-lg border border-slate-800 text-xs font-mono">
-                        <button onclick="selectCommodity('GOLD')" id="tab-GOLD" class="px-3 py-1.5 rounded-md transition font-medium bg-amber-500/20 text-amber-300 border border-amber-500/40">GOLD</button>
-                        <button onclick="selectCommodity('SILVER')" id="tab-SILVER" class="px-3 py-1.5 rounded-md transition font-medium text-slate-400 hover:text-slate-200">SILVER</button>
-                        <button onclick="selectCommodity('COFFEE')" id="tab-COFFEE" class="px-3 py-1.5 rounded-md transition font-medium text-slate-400 hover:text-slate-200">COFFEE</button>
-                        <button onclick="selectCommodity('CRUDE_OIL')" id="tab-CRUDE_OIL" class="px-3 py-1.5 rounded-md transition font-medium text-slate-400 hover:text-slate-200">CRUDE OIL</button>
+                    <!-- Technical Analysis Pill Bar -->
+                    <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-xs font-mono">
+                        <span class="text-slate-400">RSI:</span>
+                        <span id="active-rsi-value" class="text-white font-bold">50.0</span>
+                        <span class="text-slate-700">|</span>
+                        <span class="text-slate-400">SMA-7:</span>
+                        <span id="active-sma7-value" class="text-slate-300">--</span>
+                        <span class="text-slate-700">|</span>
+                        <span id="active-signal-badge" class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">ANALYZING</span>
+                    </div>
+
+                    <!-- Switcher Dropdown & Trade Action -->
+                    <div class="flex items-center gap-2">
+                        <select id="chart-asset-switcher" onchange="selectCommodity(this.value)" class="bg-slate-900 border border-slate-700 text-slate-200 text-xs font-mono px-3 py-1.5 rounded-lg focus:outline-none focus:border-emerald-500 transition">
+                            <optgroup label="Commodities">
+                                <option value="GOLD">GOLD (XAU)</option>
+                                <option value="SILVER">SILVER (XAG)</option>
+                                <option value="COFFEE">COFFEE (KC)</option>
+                                <option value="CRUDE_OIL">CRUDE OIL (CL)</option>
+                            </optgroup>
+                            <optgroup label="Cryptocurrencies">
+                                <option value="BITCOIN">BITCOIN (BTC)</option>
+                                <option value="ETHEREUM">ETHEREUM (ETH)</option>
+                                <option value="SOLANA">SOLANA (SOL)</option>
+                            </optgroup>
+                            <optgroup label="Equities / Stocks">
+                                <option value="APPLE">APPLE (AAPL)</option>
+                                <option value="NVIDIA">NVIDIA (NVDA)</option>
+                                <option value="TESLA">TESLA (TSLA)</option>
+                            </optgroup>
+                        </select>
+                        <button onclick="tradeActiveAsset()" class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-mono text-xs font-semibold flex items-center gap-1.5 shadow transition">
+                            <span>⚡</span> Trade
+                        </button>
                     </div>
                 </div>
 
@@ -280,14 +434,26 @@
                     </div>
 
                     <form id="alert-form" class="space-y-3.5">
-                        <!-- Commodity Field -->
+                        <!-- Commodity / Asset Field -->
                         <div>
-                            <label for="alert-commodity" class="block text-xs font-medium text-slate-400 mb-1">Commodity</label>
+                            <label for="alert-commodity" class="block text-xs font-medium text-slate-400 mb-1">Financial Instrument</label>
                             <select id="alert-commodity" required class="w-full bg-slate-900 border border-slate-700/80 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-emerald-500 transition">
-                                <option value="GOLD">Gold (XAU) - USD/oz</option>
-                                <option value="SILVER">Silver (XAG) - USD/oz</option>
-                                <option value="COFFEE">Coffee (KC) - USD/lb</option>
-                                <option value="CRUDE_OIL">Crude Oil (CL) - USD/bbl</option>
+                                <optgroup label="Commodities">
+                                    <option value="GOLD">Gold (XAU) - USD/oz</option>
+                                    <option value="SILVER">Silver (XAG) - USD/oz</option>
+                                    <option value="COFFEE">Coffee (KC) - USD/lb</option>
+                                    <option value="CRUDE_OIL">Crude Oil (CL) - USD/bbl</option>
+                                </optgroup>
+                                <optgroup label="Cryptocurrencies">
+                                    <option value="BITCOIN">Bitcoin (BTC) - USD</option>
+                                    <option value="ETHEREUM">Ethereum (ETH) - USD</option>
+                                    <option value="SOLANA">Solana (SOL) - USD</option>
+                                </optgroup>
+                                <optgroup label="Equities / Stocks">
+                                    <option value="APPLE">Apple Inc (AAPL) - USD/sh</option>
+                                    <option value="NVIDIA">NVIDIA Corp (NVDA) - USD/sh</option>
+                                    <option value="TESLA">Tesla Inc (TSLA) - USD/sh</option>
+                                </optgroup>
                             </select>
                         </div>
 
@@ -338,6 +504,196 @@
 
                     <div id="active-rules-container" class="space-y-2 overflow-y-auto max-h-[190px] pr-1 flex-1">
                         <div class="text-center py-6 text-slate-500 text-xs font-mono">No active alert triggers</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- New Section: Paper Trading & Portfolio Simulator -->
+        <section id="portfolio-section" class="bg-terminal-surface border border-terminal-border rounded-xl p-5 shadow-xl space-y-4">
+            <div class="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-terminal-border">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center justify-center text-base">
+                        💼
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h3 class="font-bold text-white text-sm tracking-wide">PAPER TRADING &amp; PORTFOLIO SIMULATOR</h3>
+                            <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-950/80 text-emerald-400 border border-emerald-800/60 font-semibold">SQLITE RELATIONAL LEDGER</span>
+                        </div>
+                        <p class="text-xs text-slate-400">Real-time cost-basis calculations, position sizing, live P&amp;L updates &amp; trade history</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="loadPortfolioData()" class="px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 hover:border-slate-700 text-xs font-mono text-slate-300 flex items-center gap-1.5 transition">
+                        <span>🔄</span> Refresh Portfolio
+                    </button>
+                </div>
+            </div>
+
+            <!-- Portfolio Metric Cards -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-4">
+                    <div class="text-[11px] font-mono text-slate-400">TOTAL PORTFOLIO NET WORTH</div>
+                    <div id="portfolio-net-worth" class="text-2xl font-bold font-mono-numbers text-white mt-1">$100,000.00</div>
+                    <div class="text-[10px] text-slate-500 font-mono mt-1">Cash + Market Value of Holdings</div>
+                </div>
+                <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-4">
+                    <div class="text-[11px] font-mono text-slate-400">AVAILABLE CASH BALANCE</div>
+                    <div id="portfolio-cash" class="text-2xl font-bold font-mono-numbers text-emerald-400 mt-1">$100,000.00</div>
+                    <div class="text-[10px] text-slate-500 font-mono mt-1">Starting demo capital: $100,000</div>
+                </div>
+                <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-4">
+                    <div class="text-[11px] font-mono text-slate-400">INVESTED ASSETS VALUE</div>
+                    <div id="portfolio-holdings-val" class="text-2xl font-bold font-mono-numbers text-slate-200 mt-1">$0.00</div>
+                    <div class="text-[10px] text-slate-500 font-mono mt-1">Real-time marked to market</div>
+                </div>
+                <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-4">
+                    <div class="text-[11px] font-mono text-slate-400">UNREALIZED TOTAL P&amp;L</div>
+                    <div id="portfolio-pnl" class="text-2xl font-bold font-mono-numbers text-slate-400 mt-1">$0.00 (0.00%)</div>
+                    <div id="portfolio-pnl-sub" class="text-[10px] text-slate-500 font-mono mt-1">Cost-basis vs real-time ticks</div>
+                </div>
+            </div>
+
+            <!-- Order Ticket + Holdings Grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 pt-1">
+                <!-- Order Execution Ticket (4 cols) -->
+                <div class="lg:col-span-4 bg-slate-900/80 border border-slate-800 rounded-xl p-4 flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between pb-3 mb-3 border-b border-slate-800">
+                            <span class="text-xs font-bold text-white uppercase tracking-wider font-mono">Quick Order Execution</span>
+                            <span id="trade-order-asset-pill" class="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-amber-500/10 text-amber-300 border border-amber-500/30">GOLD (XAU)</span>
+                        </div>
+
+                        <!-- Action Toggle (BUY vs SELL) -->
+                        <div class="grid grid-cols-2 gap-2 mb-3">
+                            <button type="button" id="btn-side-buy" onclick="setTradeSide('BUY')" class="py-2 text-xs font-mono font-bold rounded-lg bg-emerald-600 text-white shadow-lg shadow-emerald-950/40 border border-emerald-500/50 transition">
+                                BUY (LONG)
+                            </button>
+                            <button type="button" id="btn-side-sell" onclick="setTradeSide('SELL')" class="py-2 text-xs font-mono font-bold rounded-lg bg-slate-800 text-slate-400 border border-slate-700 hover:text-slate-200 transition">
+                                SELL (CLOSE)
+                            </button>
+                        </div>
+
+                        <!-- Asset Selection -->
+                        <div class="space-y-3">
+                            <div>
+                                <label class="block text-xs font-medium text-slate-400 mb-1">Asset to Trade</label>
+                                <select id="trade-asset-select" onchange="onTradeAssetChange(this.value)" class="w-full bg-[#080c14] border border-slate-700 rounded-lg px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-emerald-500">
+                                    <optgroup label="Commodities">
+                                        <option value="GOLD">Gold (XAU)</option>
+                                        <option value="SILVER">Silver (XAG)</option>
+                                        <option value="COFFEE">Coffee (KC)</option>
+                                        <option value="CRUDE_OIL">Crude Oil (CL)</option>
+                                    </optgroup>
+                                    <optgroup label="Cryptocurrencies">
+                                        <option value="BITCOIN">Bitcoin (BTC)</option>
+                                        <option value="ETHEREUM">Ethereum (ETH)</option>
+                                        <option value="SOLANA">Solana (SOL)</option>
+                                    </optgroup>
+                                    <optgroup label="Equities / Stocks">
+                                        <option value="APPLE">Apple Inc (AAPL)</option>
+                                        <option value="NVIDIA">NVIDIA Corp (NVDA)</option>
+                                        <option value="TESLA">Tesla Inc (TSLA)</option>
+                                    </optgroup>
+                                </select>
+                            </div>
+
+                            <!-- Execution Price -->
+                            <div class="flex items-center justify-between text-xs font-mono bg-slate-950/60 p-2.5 rounded-lg border border-slate-800/80">
+                                <span class="text-slate-400">Market Price:</span>
+                                <span id="trade-market-price" class="text-white font-bold font-mono-numbers">$2,350.00</span>
+                            </div>
+
+                            <!-- Units / Quantity -->
+                            <div>
+                                <div class="flex justify-between items-center mb-1">
+                                    <label class="text-xs font-medium text-slate-400">Quantity / Units</label>
+                                    <span id="trade-max-units" class="text-[10px] text-slate-500 font-mono">Max: --</span>
+                                </div>
+                                <input type="number" id="trade-quantity" step="any" min="0.0001" placeholder="Enter amount" oninput="calculateOrderEstimate()" class="w-full bg-[#080c14] border border-slate-700 rounded-lg px-3 py-2 text-sm font-mono text-white focus:outline-none focus:border-emerald-500">
+                            </div>
+
+                            <!-- Quick Fill Chips -->
+                            <div class="flex items-center gap-1.5 font-mono text-[10px]">
+                                <button type="button" onclick="quickFillUnits(1)" class="flex-1 py-1 rounded bg-slate-800 text-slate-300 hover:bg-slate-700 transition">1x</button>
+                                <button type="button" onclick="quickFillUnits(5)" class="flex-1 py-1 rounded bg-slate-800 text-slate-300 hover:bg-slate-700 transition">5x</button>
+                                <button type="button" onclick="quickFillPercent(0.25)" class="flex-1 py-1 rounded bg-slate-800 text-slate-300 hover:bg-slate-700 transition">25%</button>
+                                <button type="button" onclick="quickFillPercent(0.50)" class="flex-1 py-1 rounded bg-slate-800 text-slate-300 hover:bg-slate-700 transition">50%</button>
+                                <button type="button" onclick="quickFillPercent(1.00)" class="flex-1 py-1 rounded bg-emerald-950 text-emerald-300 border border-emerald-800/60 hover:bg-emerald-900 transition font-bold">MAX</button>
+                            </div>
+
+                            <!-- Order Value Calculation -->
+                            <div class="flex items-center justify-between text-xs font-mono bg-slate-950/80 p-2.5 rounded-lg border border-slate-800">
+                                <span class="text-slate-400">Estimated Total:</span>
+                                <span id="trade-estimated-total" class="text-emerald-400 font-bold font-mono-numbers">$0.00</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Submit Order Button -->
+                    <div class="mt-4 pt-3 border-t border-slate-800">
+                        <button type="button" id="btn-execute-order" onclick="submitPaperOrder()" class="w-full py-2.5 px-4 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs font-mono flex items-center justify-center gap-2 shadow-lg shadow-emerald-950/40 transition">
+                            <span>⚡</span> EXECUTE PAPER BUY
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Holdings & History Tabs (8 cols) -->
+                <div class="lg:col-span-8 flex flex-col bg-slate-900/80 border border-slate-800 rounded-xl p-4">
+                    <div class="flex items-center justify-between pb-3 mb-3 border-b border-slate-800">
+                        <div class="flex items-center gap-2 font-mono text-xs">
+                            <button id="tab-holdings-btn" onclick="switchPortfolioTab('holdings')" class="px-3 py-1.5 rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold">
+                                Current Positions (<span id="holdings-count-badge">0</span>)
+                            </button>
+                            <button id="tab-transactions-btn" onclick="switchPortfolioTab('transactions')" class="px-3 py-1.5 rounded-lg text-slate-400 hover:text-slate-200">
+                                Transaction Ledger
+                            </button>
+                        </div>
+                        <span class="text-[11px] font-mono text-slate-400">Weighted Average Cost Basis</span>
+                    </div>
+
+                    <!-- Tab 1: Holdings Table -->
+                    <div id="portfolio-holdings-view" class="overflow-x-auto flex-1">
+                        <table class="w-full text-left text-xs font-mono">
+                            <thead>
+                                <tr class="text-slate-400 border-b border-slate-800">
+                                    <th class="pb-2 font-medium">ASSET</th>
+                                    <th class="pb-2 font-medium text-right">UNITS</th>
+                                    <th class="pb-2 font-medium text-right">AVG BUY</th>
+                                    <th class="pb-2 font-medium text-right">MARKET PRICE</th>
+                                    <th class="pb-2 font-medium text-right">TOTAL VALUE</th>
+                                    <th class="pb-2 font-medium text-right">UNREALIZED P&amp;L</th>
+                                    <th class="pb-2 font-medium text-center">ACTION</th>
+                                </tr>
+                            </thead>
+                            <tbody id="holdings-tbody" class="divide-y divide-slate-800/60">
+                                <tr>
+                                    <td colspan="7" class="py-8 text-center text-slate-500">No active positions in simulated account. Execute a buy order above to start paper trading.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Tab 2: Transactions Table -->
+                    <div id="portfolio-transactions-view" class="overflow-x-auto flex-1 hidden">
+                        <table class="w-full text-left text-xs font-mono">
+                            <thead>
+                                <tr class="text-slate-400 border-b border-slate-800">
+                                    <th class="pb-2 font-medium">TIMESTAMP</th>
+                                    <th class="pb-2 font-medium">TYPE</th>
+                                    <th class="pb-2 font-medium">ASSET</th>
+                                    <th class="pb-2 font-medium text-right">UNITS</th>
+                                    <th class="pb-2 font-medium text-right">PRICE</th>
+                                    <th class="pb-2 font-medium text-right">TOTAL</th>
+                                </tr>
+                            </thead>
+                            <tbody id="transactions-tbody" class="divide-y divide-slate-800/60">
+                                <tr>
+                                    <td colspan="6" class="py-8 text-center text-slate-500">No transactions recorded in SQLite ledger yet.</td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>

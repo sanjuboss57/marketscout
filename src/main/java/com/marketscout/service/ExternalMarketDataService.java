@@ -100,6 +100,38 @@ public class ExternalMarketDataService {
             latestForexRates.putIfAbsent("CAD", 1.36);
             latestForexRates.putIfAbsent("status", "CACHED_FALLBACK");
         }
+
+        // Outbound HTTP requests to Coinbase API for real-time live crypto spot prices
+        fetchLiveCryptoPrices();
+    }
+
+    private void fetchLiveCryptoPrices() {
+        fetchCryptoSpot("BTC-USD", "BTC", 64500.0);
+        fetchCryptoSpot("ETH-USD", "ETH", 3450.0);
+        fetchCryptoSpot("SOL-USD", "SOL", 145.0);
+    }
+
+    private void fetchCryptoSpot(String pair, String symbol, double fallback) {
+        try {
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create("https://api.coinbase.com/v2/prices/" + pair + "/spot"))
+                    .timeout(Duration.ofSeconds(4))
+                    .header("Accept", "application/json")
+                    .GET()
+                    .build();
+            HttpResponse<String> resp = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            if (resp.statusCode() == 200) {
+                JsonNode root = objectMapper.readTree(resp.body());
+                double price = root.path("data").path("amount").asDouble(fallback);
+                if (price > 0) {
+                    latestForexRates.put(symbol, price);
+                }
+            } else {
+                latestForexRates.putIfAbsent(symbol, fallback);
+            }
+        } catch (Exception e) {
+            latestForexRates.putIfAbsent(symbol, fallback);
+        }
     }
 
     public Map<String, Object> getLatestRates() {

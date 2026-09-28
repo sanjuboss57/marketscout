@@ -38,10 +38,21 @@ public class CommodityDataService implements MarketDataProvider {
     }
 
     private void initModels() {
+        // Commodities & Metals
         commodityModels.put(Commodity.GOLD, new PreciousMetalCommodity("XAU", "Gold", "USD/oz", 2350.00, 0.008));
         commodityModels.put(Commodity.SILVER, new PreciousMetalCommodity("XAG", "Silver", "USD/oz", 28.50, 0.015));
         commodityModels.put(Commodity.COFFEE, new AgriculturalCommodity("KC", "Coffee", "USD/lb", 2.20, 0.020));
         commodityModels.put(Commodity.CRUDE_OIL, new EnergyCommodity("CL", "Crude Oil", "USD/bbl", 82.00, 0.018));
+
+        // Cryptocurrencies
+        commodityModels.put(Commodity.BITCOIN, new CryptoAsset("BTC", "Bitcoin", "USD", 64500.00, 0.025, "Bitcoin", "#1"));
+        commodityModels.put(Commodity.ETHEREUM, new CryptoAsset("ETH", "Ethereum", "USD", 3450.00, 0.028, "Ethereum", "#2"));
+        commodityModels.put(Commodity.SOLANA, new CryptoAsset("SOL", "Solana", "USD", 145.00, 0.035, "Solana", "#5"));
+
+        // Tech Equities & Stocks
+        commodityModels.put(Commodity.APPLE, new StockEquity("AAPL", "Apple Inc.", "USD/share", 225.00, 0.012, "Consumer Tech", 33.2, 0.52));
+        commodityModels.put(Commodity.NVIDIA, new StockEquity("NVDA", "Nvidia Corp.", "USD/share", 125.00, 0.022, "Semiconductors & AI", 45.8, 0.08));
+        commodityModels.put(Commodity.TESLA, new StockEquity("TSLA", "Tesla Inc.", "USD/share", 245.00, 0.026, "Automotive & Energy", 62.4, 0.00));
     }
 
     @PostConstruct

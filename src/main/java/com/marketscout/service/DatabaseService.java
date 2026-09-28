@@ -84,6 +84,45 @@ public class DatabaseService {
                 );
             """);
 
+            // 5. Portfolio Accounts Table (Cash balance for paper trading)
+            stmt.execute("""
+                CREATE TABLE IF NOT EXISTS portfolio_accounts (
+                    user_id INTEGER PRIMARY KEY,
+                    cash_balance REAL NOT NULL,
+                    updated_at TEXT NOT NULL,
+                    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+                );
+            """);
+
+            // 6. Portfolio Holdings Table (Open positions with average cost)
+            stmt.execute("""
+                CREATE TABLE IF NOT EXISTS portfolio_holdings (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER NOT NULL,
+                    commodity TEXT NOT NULL,
+                    quantity REAL NOT NULL,
+                    avg_buy_price REAL NOT NULL,
+                    updated_at TEXT NOT NULL,
+                    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+                    UNIQUE(user_id, commodity)
+                );
+            """);
+
+            // 7. Portfolio Transactions Table (Order execution audit history)
+            stmt.execute("""
+                CREATE TABLE IF NOT EXISTS portfolio_transactions (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER NOT NULL,
+                    commodity TEXT NOT NULL,
+                    action TEXT NOT NULL,
+                    quantity REAL NOT NULL,
+                    price REAL NOT NULL,
+                    total_amount REAL NOT NULL,
+                    created_at TEXT NOT NULL,
+                    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+                );
+            """);
+
             // Insert default user if not exists
             try (PreparedStatement ps = conn.prepareStatement(
                     "INSERT OR IGNORE INTO users (id, username, password_hash, full_name, created_at) VALUES (1, 'sanjuboss57', 'admin123', 'Sanju Developer', ?)"
@@ -92,7 +131,15 @@ public class DatabaseService {
                 ps.executeUpdate();
             }
 
-            log.info("SQLite Database initialized successfully with relational schema.");
+            // Insert default $100,000 demo paper trading account
+            try (PreparedStatement ps = conn.prepareStatement(
+                    "INSERT OR IGNORE INTO portfolio_accounts (user_id, cash_balance, updated_at) VALUES (1, 100000.00, ?)"
+            )) {
+                ps.setString(1, Instant.now().toString());
+                ps.executeUpdate();
+            }
+
+            log.info("SQLite Database initialized successfully with relational schema and portfolio tables.");
 
         } catch (SQLException e) {
             log.error("Failed to initialize SQLite database: {}", e.getMessage(), e);
@@ -310,5 +357,137 @@ public class DatabaseService {
             log.error("Failed to retrieve snapshot: {}", e.getMessage());
         }
         return Collections.emptyMap();
+    }
+
+    // ───────────────────────────────────────────────────────────
+    //  CRUD: PORTFOLIO & PAPER TRADING
+    // ───────────────────────────────────────────────────────────
+
+    public double getCashBalance(long userId) {
+        String sql = "SELECT cash_balance FROM portfolio_accounts WHERE user_id = ?";
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setLong(1, userId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getDouble("cash_balance");
+                }
+            }
+        } catch (SQLException e) {
+            log.error("Failed to get cash balance: {}", e.getMessage());
+        }
+        return 100000.00;
+    }
+
+    public void updateCashBalance(long userId, double newBalance) {
+        String sql = "UPDATE portfolio_accounts SET cash_balance = ?, updated_at = ? WHERE user_id = ?";
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setDouble(1, newBalance);
+            ps.setString(2, Instant.now().toString());
+            ps.setLong(3, userId);
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            log.error("Failed to update cash balance: {}", e.getMessage());
+        }
+    }
+
+    public List<Map<String, Object>> getRawHoldings(long userId) {
+        String sql = "SELECT * FROM portfolio_holdings WHERE user_id = ? AND quantity > 0";
+        List<Map<String, Object>> list = new ArrayList<>();
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setLong(1, userId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Map<String, Object> map = new HashMap<>();
+                    map.put("id", rs.getLong("id"));
+                    map.put("commodity", rs.getString("commodity"));
+                    map.put("quantity", rs.getDouble("quantity"));
+                    map.put("avgBuyPrice", rs.getDouble("avg_buy_price"));
+                    map.put("updatedAt", rs.getString("updated_at"));
+                    list.add(map);
+                }
+            }
+        } catch (SQLException e) {
+            log.error("Failed to get portfolio holdings: {}", e.getMessage());
+        }
+        return list;
+    }
+
+    public void saveOrUpdateHolding(long userId, Commodity commodity, double quantity, double avgBuyPrice) {
+        String sql = """
+            INSERT INTO portfolio_holdings (user_id, commodity, quantity, avg_buy_price, updated_at)
+            VALUES (?, ?, ?, ?, ?)
+            ON CONFLICT(user_id, commodity) DO UPDATE SET
+                quantity = excluded.quantity,
+                avg_buy_price = excluded.avg_buy_price,
+                updated_at = excluded.updated_at;
+        """;
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setLong(1, userId);
+            ps.setString(2, commodity.name());
+            ps.setDouble(3, quantity);
+            ps.setDouble(4, avgBuyPrice);
+            ps.setString(5, Instant.now().toString());
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            log.error("Failed to save or update holding: {}", e.getMessage());
+        }
+    }
+
+    public void deleteHolding(long userId, Commodity commodity) {
+        String sql = "DELETE FROM portfolio_holdings WHERE user_id = ? AND commodity = ?";
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setLong(1, userId);
+            ps.setString(2, commodity.name());
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            log.error("Failed to delete holding: {}", e.getMessage());
+        }
+    }
+
+    public void saveTransaction(long userId, Commodity commodity, String action, double quantity, double price, double totalAmount) {
+        String sql = "INSERT INTO portfolio_transactions (user_id, commodity, action, quantity, price, total_amount, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)";
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setLong(1, userId);
+            ps.setString(2, commodity.name());
+            ps.setString(3, action);
+            ps.setDouble(4, quantity);
+            ps.setDouble(5, price);
+            ps.setDouble(6, totalAmount);
+            ps.setString(7, Instant.now().toString());
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            log.error("Failed to record portfolio transaction: {}", e.getMessage());
+        }
+    }
+
+    public List<Map<String, Object>> getTransactions(long userId) {
+        String sql = "SELECT * FROM portfolio_transactions WHERE user_id = ? ORDER BY id DESC LIMIT 50";
+        List<Map<String, Object>> list = new ArrayList<>();
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setLong(1, userId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Map<String, Object> map = new HashMap<>();
+                    map.put("id", rs.getLong("id"));
+                    map.put("commodity", rs.getString("commodity"));
+                    map.put("action", rs.getString("action"));
+                    map.put("quantity", rs.getDouble("quantity"));
+                    map.put("price", rs.getDouble("price"));
+                    map.put("totalAmount", rs.getDouble("total_amount"));
+                    map.put("createdAt", rs.getString("created_at"));
+                    list.add(map);
+                }
+            }
+        } catch (SQLException e) {
+            log.error("Failed to retrieve portfolio transactions: {}", e.getMessage());
+        }
+        return list;
     }
 }
