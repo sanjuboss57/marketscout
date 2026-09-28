@@ -638,19 +638,22 @@ function loadPortfolioData() {
 function renderPortfolioKPIs() {
     if (!portfolioData) return;
 
+    const netWorth = portfolioData.totalNetWorth !== undefined ? portfolioData.totalNetWorth : (portfolioData.totalPortfolioValue || 100000);
+    const cash = portfolioData.cashBalance !== undefined ? portfolioData.cashBalance : 100000;
+    const holdingsVal = portfolioData.totalHoldingValue !== undefined ? portfolioData.totalHoldingValue : (portfolioData.holdingsValue || 0);
+
     const netWorthEl = document.getElementById('portfolio-net-worth');
     const cashEl = document.getElementById('portfolio-cash');
     const holdingsValEl = document.getElementById('portfolio-holdings-val');
     const pnlEl = document.getElementById('portfolio-pnl');
-    const pnlSubEl = document.getElementById('portfolio-pnl-sub');
 
-    if (netWorthEl) netWorthEl.textContent = `$${formatNumber(portfolioData.totalPortfolioValue, 2)}`;
-    if (cashEl) cashEl.textContent = `$${formatNumber(portfolioData.cashBalance, 2)}`;
-    if (holdingsValEl) holdingsValEl.textContent = `$${formatNumber(portfolioData.holdingsValue, 2)}`;
+    if (netWorthEl) netWorthEl.textContent = `$${formatNumber(netWorth, 2)}`;
+    if (cashEl) cashEl.textContent = `$${formatNumber(cash, 2)}`;
+    if (holdingsValEl) holdingsValEl.textContent = `$${formatNumber(holdingsVal, 2)}`;
 
     if (pnlEl) {
-        const pnl = portfolioData.totalProfitLoss || 0;
-        const pnlPct = portfolioData.totalProfitLossPercent || 0;
+        const pnl = portfolioData.totalUnrealizedPnl !== undefined ? portfolioData.totalUnrealizedPnl : (portfolioData.totalProfitLoss || 0);
+        const pnlPct = portfolioData.totalUnrealizedPnlPercent !== undefined ? portfolioData.totalUnrealizedPnlPercent : (portfolioData.totalProfitLossPercent || 0);
         const sign = pnl >= 0 ? '+' : '';
         pnlEl.textContent = `${sign}$${formatNumber(pnl, 2)} (${sign}${pnlPct.toFixed(2)}%)`;
 
@@ -684,8 +687,9 @@ function renderHoldingsTable() {
     }
 
     tbody.innerHTML = holdings.map(h => {
-        const pnl = h.unrealizedProfitLoss || 0;
-        const pnlPct = h.unrealizedProfitLossPercent || 0;
+        const pnl = h.unrealizedPnl !== undefined ? h.unrealizedPnl : (h.unrealizedProfitLoss || 0);
+        const pnlPct = h.unrealizedPnlPercent !== undefined ? h.unrealizedPnlPercent : (h.unrealizedProfitLossPercent || 0);
+        const avgPrice = h.avgBuyPrice !== undefined ? h.avgBuyPrice : (h.averageCostBasis || 0);
         const sign = pnl >= 0 ? '+' : '';
         const pnlColor = pnl >= 0 ? 'text-emerald-400' : 'text-rose-400';
         const cfg = COMMODITY_CONFIG[h.commodity] || { code: h.commodity, name: h.commodity };
@@ -697,7 +701,7 @@ function renderHoldingsTable() {
                     <span class="text-[10px] text-slate-400 font-normal">(${cfg.code})</span>
                 </td>
                 <td class="py-2.5 text-right text-slate-200">${h.quantity.toFixed(4)}</td>
-                <td class="py-2.5 text-right text-slate-400">$${formatNumber(h.averageCostBasis, 2)}</td>
+                <td class="py-2.5 text-right text-slate-400">$${formatNumber(avgPrice, 2)}</td>
                 <td class="py-2.5 text-right text-white font-bold" id="live-holdings-mkt-${h.commodity}">$${formatNumber(h.currentPrice, 2)}</td>
                 <td class="py-2.5 text-right text-slate-200 font-bold" id="live-holdings-val-${h.commodity}">$${formatNumber(h.currentValue, 2)}</td>
                 <td class="py-2.5 text-right font-bold ${pnlColor}" id="live-holdings-pnl-${h.commodity}">
@@ -722,7 +726,8 @@ function renderLiveHoldingsUpdate() {
     portfolioData.holdings.forEach(h => {
         const livePrice = latestPricesMap[h.commodity] ? latestPricesMap[h.commodity].currentPrice : h.currentPrice;
         const currentVal = h.quantity * livePrice;
-        const cost = h.quantity * h.averageCostBasis;
+        const costBasis = h.avgBuyPrice !== undefined ? h.avgBuyPrice : (h.averageCostBasis || 0);
+        const cost = h.quantity * costBasis;
         const pnl = currentVal - cost;
         const pnlPct = cost > 0 ? (pnl / cost) * 100 : 0;
 
@@ -779,14 +784,15 @@ function loadTransactionsData() {
             }
 
             tbody.innerHTML = txs.map(t => {
-                const isBuy = t.type === 'BUY';
+                const isBuy = t.action === 'BUY' || t.type === 'BUY';
+                const time = t.createdAt || t.timestamp;
                 const typeBadge = isBuy
                     ? `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">BUY</span>`
                     : `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-500/20 text-rose-400 border border-rose-500/30">SELL</span>`;
 
                 return `
                     <tr class="hover:bg-slate-800/40 transition">
-                        <td class="py-2.5 text-slate-400">${formatTimestamp(t.timestamp)}</td>
+                        <td class="py-2.5 text-slate-400">${formatTimestamp(time)}</td>
                         <td class="py-2.5">${typeBadge}</td>
                         <td class="py-2.5 font-bold text-white">${t.commodity}</td>
                         <td class="py-2.5 text-right text-slate-200">${Number(t.quantity).toFixed(4)}</td>
